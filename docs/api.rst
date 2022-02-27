@@ -4184,6 +4184,24 @@ GuildScheduledEventMetadata
 .. autoclass:: GuildScheduledEventMetadata()
     :members:
 
+DiscoveryMetadata
+~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: DiscoveryMetadata
+
+.. autoclass:: DiscoveryMetadata()
+    :members:
+
+DiscoveryCategory
+~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: DiscoveryCategory
+
+.. autoclass:: DiscoveryCategory()
+    :members:
+
+
+
 
 Integration
 ~~~~~~~~~~~~

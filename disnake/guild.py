@@ -55,6 +55,7 @@ from .asset import Asset
 from .channel import *
 from .channel import _guild_channel_factory, _threaded_guild_channel_factory
 from .colour import Colour
+from .discovery import DiscoveryMetadata
 from .emoji import Emoji
 from .enums import (
     AuditLogAction,
@@ -3227,6 +3228,28 @@ class Guild(Hashable):
             user_id=user_id,
             action_type=action,
         )
+
+    async def discovery_metadata(self) -> DiscoveryMetadata:
+        """|coro|
+
+        Retrieves the discovery metadata of the guild.
+
+        .. versionadded:: 2.5
+
+        .. note::
+
+            You must have :attr:`~Permissions.manage_guild` permission to
+            use this.
+
+        Raises
+        ------
+        Forbidden
+            You do not have permission to view the discovery metadata.
+        HTTPException
+            Retrieving the discovery metadata failed.
+        """
+        data = await self._state.http.get_guild_discovery_metadata(self.id)
+        return DiscoveryMetadata(guild=self, state=self._state, data=data)
 
     async def widget(self) -> Widget:
         """|coro|
