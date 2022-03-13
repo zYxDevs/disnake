@@ -168,7 +168,7 @@ class Select(Item[V]):
         options = [] if options is MISSING else _parse_select_options(options)
         self._underlying = SelectMenu._raw_construct(
             custom_id=custom_id,
-            type=ComponentType.select,
+            type=ComponentType.string_select,
             placeholder=placeholder,
             min_values=min_values,
             max_values=max_values,
