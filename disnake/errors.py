@@ -30,6 +30,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 if TYPE_CHECKING:
     from aiohttp import ClientResponse, ClientWebSocketResponse
 
+    from .http import Route
+
     try:
         from requests import Response
 
@@ -48,6 +50,7 @@ __all__ = (
     "Forbidden",
     "NotFound",
     "DiscordServerError",
+    "RatelimitTooLong",
     "InvalidData",
     "InvalidArgument",
     "LoginFailure",
@@ -184,6 +187,26 @@ class DiscordServerError(HTTPException):
     """
 
     pass
+
+
+class RatelimitTooLong(DiscordException):
+    """Exception that's raised for when waiting for a ratelimit would be too long.
+
+    .. versionadded:: 2.5
+    """
+
+    def __init__(self, time: float, route: Route, message: Optional[str] = None):
+        self.reset_at = time
+        self.message = message or ""
+        self._method = route.method
+        self._bucket = route.bucket
+        self._url = route.url
+
+        fmt = f"Ratelimit for bucket {route.bucket} expires at {self.reset_at}."
+        if len(self.message):
+            fmt += f": {self.message}"
+
+        super().__init__(fmt)
 
 
 class InvalidData(ClientException):
