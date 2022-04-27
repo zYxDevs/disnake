@@ -288,7 +288,7 @@ class InteractionException(ClientException):
 
 class InteractionTimedOut(InteractionException):
     """Exception that's raised when an interaction takes more than 3 seconds
-    to respond but is not deffered.
+    to respond but is not deferred.
 
     .. versionadded:: 2.0
 
