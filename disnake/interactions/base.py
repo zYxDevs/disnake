@@ -125,6 +125,7 @@ class _ResponseLock:
 
         await self._condition.acquire()
         if self._response._responded:
+            self._condition.release()
             raise InteractionResponded(self._response._parent)
 
     async def __aexit__(self, exc_type, exc, tb):
