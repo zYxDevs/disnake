@@ -22,6 +22,15 @@ setup_env = {cmd = 'nox -s setup --', help = 'Setup the local environment and se
 test = { cmd = "nox -Rs test --", help = "Run pytest" }
 
 
+[tool.towncrier]
+template = 'changes/_template.rst'
+package = "disnake"
+filename = "docs/whats_new.rst"
+directory = "changes"
+title_format = "v{version}"
+underlines = "-~"
+issue_format = ":issue:`{issue}`"
+
 [tool.slotscheck]
 strict-imports = true
 require-superclass = true
