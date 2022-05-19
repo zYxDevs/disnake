@@ -35,7 +35,6 @@ from typing import (
     Dict,
     List,
     Literal,
-    Mapping,
     NamedTuple,
     Optional,
     Sequence,
@@ -47,10 +46,7 @@ from typing import (
 )
 
 from . import abc, utils
-from .app_commands import (
-    GuildApplicationCommandPermissions,
-    PartialGuildApplicationCommandPermissions,
-)
+from .app_commands import GuildApplicationCommandPermissions
 from .asset import Asset
 from .bans import BanEntry
 from .channel import *
@@ -97,7 +93,7 @@ VocalGuildChannel = Union[VoiceChannel, StageChannel]
 MISSING = utils.MISSING
 
 if TYPE_CHECKING:
-    from .abc import Snowflake, SnowflakeTime, User as ABCUser
+    from .abc import Snowflake, SnowflakeTime
     from .app_commands import APIApplicationCommand
     from .asset import AssetBytes
     from .channel import CategoryChannel, ForumChannel, StageChannel, TextChannel, VoiceChannel
@@ -283,6 +279,13 @@ class Guild(Hashable):
 
             This value is unreliable and will only be set after the guild was updated at least once.
             Avoid using this and use :func:`widget_settings` instead.
+
+    vanity_url_code: Optional[:class:`str`]
+        The vanity invite code for this guild, if set.
+
+        To get a full :class:`Invite` object, see :attr:`Guild.vanity_invite`.
+
+        .. versionadded:: 2.5
     """
 
     __slots__ = (
@@ -312,6 +315,7 @@ class Guild(Hashable):
         "approximate_presence_count",
         "widget_enabled",
         "widget_channel_id",
+        "vanity_url_code",
         "_members",
         "_channels",
         "_icon",
@@ -489,23 +493,6 @@ class Guild(Hashable):
         """
         return self._state._get_guild_command_named(self.id, name)
 
-    def get_command_permissions(
-        self, command_id: int, /
-    ) -> Optional[GuildApplicationCommandPermissions]:
-        """Gets the cached application command permissions for the command with the specified ID.
-
-        Parameters
-        ----------
-        command_id: :class:`int`
-            The application command ID to search for.
-
-        Returns
-        -------
-        Optional[:class:`GuildApplicationCommandPermissions`]
-            The application command permissions if found, or ``None`` otherwise.
-        """
-        return self._state._get_command_permissions(self.id, command_id)
-
     def _from_data(self, guild: GuildPayload) -> None:
         # according to Stan, this is always available even if the guild is unavailable
         # I don't have this guarantee when someone updates the guild.
@@ -564,6 +551,7 @@ class Guild(Hashable):
         self.approximate_member_count: Optional[int] = guild.get("approximate_member_count")
         self.widget_enabled: Optional[bool] = guild.get("widget_enabled")
         self.widget_channel_id: Optional[int] = utils._get_as_snowflake(guild, "widget_channel_id")
+        self.vanity_url_code: Optional[str] = guild.get("vanity_url_code")
 
         stage_instances = guild.get("stage_instances")
         if stage_instances is not None:
@@ -1194,10 +1182,11 @@ class Guild(Hashable):
         reason: Optional[str] = None,
         category: Optional[CategoryChannel] = None,
         position: int = MISSING,
-        topic: str = MISSING,
+        topic: Optional[str] = MISSING,
         slowmode_delay: int = MISSING,
         default_auto_archive_duration: AnyThreadArchiveDuration = MISSING,
         nsfw: bool = MISSING,
+        news: bool = MISSING,
         overwrites: Dict[Union[Role, Member], PermissionOverwrite] = MISSING,
     ) -> TextChannel:
         """|coro|
@@ -1253,7 +1242,7 @@ class Guild(Hashable):
         position: :class:`int`
             The position in the channel list. This is a number that starts
             at 0. e.g. the top channel is position 0.
-        topic: :class:`str`
+        topic: Optional[:class:`str`]
             The channel's topic.
         slowmode_delay: :class:`int`
             Specifies the slowmode rate limit for users in this channel, in seconds.
@@ -1266,7 +1255,13 @@ class Guild(Hashable):
             .. versionadded:: 2.5
 
         nsfw: :class:`bool`
-            Whether mark the channel as NSFW or not.
+            Whether to mark the channel as NSFW or not.
+        news: :class:`bool`
+            Whether to make a news channel. News channels are text channels that can be followed.
+            This is only available to guilds that contain ``NEWS`` in :attr:`Guild.features`.
+
+            .. versionadded:: 2.5
+
         reason: Optional[:class:`str`]
             The reason for creating this channel. Shows up on the audit log.
 
@@ -1302,10 +1297,15 @@ class Guild(Hashable):
                 "ThreadArchiveDurationLiteral", try_enum_to_int(default_auto_archive_duration)
             )
 
+        if news:
+            channel_type = ChannelType.news
+        else:
+            channel_type = ChannelType.text
+
         data = await self._create_channel(
             name,
             overwrites=overwrites,
-            channel_type=ChannelType.text,
+            channel_type=channel_type,
             category=category,
             reason=reason,
             **options,
@@ -1423,7 +1423,7 @@ class Guild(Hashable):
         self,
         name: str,
         *,
-        topic: str = MISSING,
+        topic: Optional[str] = MISSING,
         position: int = MISSING,
         overwrites: Dict[Union[Role, Member], PermissionOverwrite] = MISSING,
         category: Optional[CategoryChannel] = None,
@@ -1440,11 +1440,11 @@ class Guild(Hashable):
         ----------
         name: :class:`str`
             The channel's name.
-        topic: :class:`str`
+        topic: Optional[:class:`str`]
             The channel's topic.
 
             .. versionchanged:: 2.5
-                This no longer must be set.
+                This is no longer required to be provided.
 
         overwrites: Dict[Union[:class:`Role`, :class:`Member`], :class:`PermissionOverwrite`]
             A :class:`dict` of target (either a role or a member) to
@@ -2862,7 +2862,7 @@ class Guild(Hashable):
             The name of a unicode emoji that represents the sticker's expression.
         file: :class:`File`
             The file of the sticker to upload.
-        reason: :class:`str`
+        reason: Optional[:class:`str`]
             The reason for creating this sticker. Shows up on the audit log.
 
         Raises
@@ -3416,15 +3416,23 @@ class Guild(Hashable):
         """
         await self._state.http.unban(user.id, self.id, reason=reason)
 
-    async def vanity_invite(self) -> Optional[Invite]:
+    async def vanity_invite(self, *, use_cached: bool = False) -> Optional[Invite]:
         """|coro|
 
         Returns the guild's special vanity invite.
 
         The guild must have ``VANITY_URL`` in :attr:`~Guild.features`.
 
-        You must have :attr:`~Permissions.manage_guild` permission to
-        use this.
+        If ``use_cached`` is False, then you must have
+        :attr:`~Permissions.manage_guild` permission to use this.
+
+        Parameters
+        ----------
+        use_cached: :class:`bool`
+            Whether to use the cached :attr:`Guild.vanity_url_code`
+            and attempt to convert it into a full invite.
+
+            .. versionadded:: 2.5
 
         Raises
         ------
@@ -3440,9 +3448,14 @@ class Guild(Hashable):
             have a vanity invite set.
         """
         # we start with { code: abc }
-        payload: Any = await self._state.http.get_vanity_code(self.id)
-        if not payload["code"]:
-            return None
+        if use_cached:
+            if not self.vanity_url_code:
+                return None
+            payload: Any = {"code": self.vanity_url_code}
+        else:
+            payload: Any = await self._state.http.get_vanity_code(self.id)
+            if not payload["code"]:
+                return None
 
         # get the vanity URL channel since default channels aren't
         # reliable or a thing anymore
@@ -3958,7 +3971,10 @@ class Guild(Hashable):
         Parameters
         ----------
         command_id: :class:`int`
-            The ID of the application command.
+            The ID of the application command, or the application ID to fetch application-wide permissions.
+
+            .. versionchanged:: 2.5
+                Can now also fetch application-wide permissions.
 
         Returns
         -------
@@ -3966,62 +3982,6 @@ class Guild(Hashable):
             The application command permissions.
         """
         return await self._state.fetch_command_permissions(self.id, command_id)
-
-    async def edit_command_permissions(
-        self,
-        command_id: int,
-        *,
-        permissions: Mapping[Union[Role, ABCUser], bool] = None,
-        role_ids: Mapping[int, bool] = None,
-        user_ids: Mapping[int, bool] = None,
-    ) -> GuildApplicationCommandPermissions:
-        """
-        Edits guild permissions of a single command.
-
-        Parameters
-        ----------
-        command_id: :class:`int`
-            The ID of the application command you want to apply these permissions to.
-        permissions: Mapping[Union[:class:`Role`, :class:`disnake.abc.User`], :class:`bool`]
-            Roles or users to booleans. ``True`` means "allow", ``False`` means "deny".
-        role_ids: Mapping[:class:`int`, :class:`bool`]
-            Role IDs to booleans.
-        user_ids: Mapping[:class:`int`, :class:`bool`]
-            User IDs to booleans.
-
-        Returns
-        -------
-        :class:`GuildApplicationCommandPermissions`
-            The object representing the edited application command permissions.
-        """
-        perms = PartialGuildApplicationCommandPermissions(
-            command_id=command_id,
-            permissions=permissions,
-            role_ids=role_ids,
-            user_ids=user_ids,
-        )
-        return await self._state.edit_command_permissions(self.id, perms)
-
-    async def bulk_edit_command_permissions(
-        self, permissions: List[PartialGuildApplicationCommandPermissions]
-    ) -> List[GuildApplicationCommandPermissions]:
-        """|coro|
-
-        Edits guild permissions of multiple application commands at once.
-
-        .. versionadded:: 2.1
-
-        Parameters
-        ----------
-        permissions: List[:class:`PartialGuildApplicationCommandPermissions`]
-            A list of partial permissions for each application command you want to edit.
-
-        Returns
-        -------
-        List[:class:`GuildApplicationCommandPermissions`]
-            A list of edited permissions of application commands.
-        """
-        return await self._state.bulk_edit_command_permissions(self.id, permissions)
 
     @overload
     async def timeout(

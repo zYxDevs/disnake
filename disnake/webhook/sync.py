@@ -844,16 +844,18 @@ class SyncWebhook(BaseWebhook):
     @overload
     def send(
         self,
-        content: Optional[str] = MISSING,
+        content: Optional[str] = ...,
         *,
-        username: str = MISSING,
-        avatar_url: Any = MISSING,
-        tts: bool = MISSING,
-        file: File = MISSING,
-        files: List[File] = MISSING,
-        embed: Embed = MISSING,
-        embeds: List[Embed] = MISSING,
-        allowed_mentions: AllowedMentions = MISSING,
+        username: str = ...,
+        avatar_url: Any = ...,
+        tts: bool = ...,
+        file: File = ...,
+        files: List[File] = ...,
+        embed: Embed = ...,
+        embeds: List[Embed] = ...,
+        suppress_embeds: bool = ...,
+        allowed_mentions: AllowedMentions = ...,
+        thread: Snowflake = ...,
         wait: Literal[True],
     ) -> SyncWebhookMessage:
         ...
@@ -861,16 +863,18 @@ class SyncWebhook(BaseWebhook):
     @overload
     def send(
         self,
-        content: Optional[str] = MISSING,
+        content: Optional[str] = ...,
         *,
-        username: str = MISSING,
-        avatar_url: Any = MISSING,
-        tts: bool = MISSING,
-        file: File = MISSING,
-        files: List[File] = MISSING,
-        embed: Embed = MISSING,
-        embeds: List[Embed] = MISSING,
-        allowed_mentions: AllowedMentions = MISSING,
+        username: str = ...,
+        avatar_url: Any = ...,
+        tts: bool = ...,
+        file: File = ...,
+        files: List[File] = ...,
+        embed: Embed = ...,
+        embeds: List[Embed] = ...,
+        suppress_embeds: bool = ...,
+        allowed_mentions: AllowedMentions = ...,
+        thread: Snowflake = ...,
         wait: Literal[False] = ...,
     ) -> None:
         ...
@@ -886,6 +890,7 @@ class SyncWebhook(BaseWebhook):
         files: List[File] = MISSING,
         embed: Embed = MISSING,
         embeds: List[Embed] = MISSING,
+        suppress_embeds: bool = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
         thread: Snowflake = MISSING,
         wait: bool = False,
@@ -934,6 +939,12 @@ class SyncWebhook(BaseWebhook):
 
             .. versionadded:: 2.0
 
+        suppress_embeds: :class:`bool`
+            Whether to suppress embeds for the message. This hides
+            all embeds from the UI if set to ``True``.
+
+            .. versionadded:: 2.5
+
         wait: :class:`bool`
             Whether the server should wait before sending a response. This essentially
             means that the return type of this function changes from ``None`` to
@@ -973,6 +984,7 @@ class SyncWebhook(BaseWebhook):
             username=username,
             avatar_url=avatar_url,
             tts=tts,
+            suppress_embeds=suppress_embeds,
             file=file,
             files=files,
             embed=embed,

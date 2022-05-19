@@ -37,6 +37,7 @@ from typing import (
     List,
     Literal,
     Mapping,
+    NamedTuple,
     Optional,
     Sequence,
     Tuple,
@@ -55,6 +56,7 @@ from .context_managers import Typing
 from .enums import ChannelType, StagePrivacyLevel, VideoQualityMode, try_enum, try_enum_to_int
 from .errors import ClientException, InvalidArgument
 from .file import File
+from .flags import MessageFlags
 from .iterators import ArchivedThreadIterator
 from .mixins import Hashable
 from .permissions import PermissionOverwrite, Permissions
@@ -305,7 +307,7 @@ class TextChannel(disnake.abc.Messageable, disnake.abc.GuildChannel, Hashable):
         *,
         reason: Optional[str] = ...,
         name: str = ...,
-        topic: str = ...,
+        topic: Optional[str] = ...,
         position: int = ...,
         nsfw: bool = ...,
         sync_permissions: bool = ...,
@@ -342,7 +344,7 @@ class TextChannel(disnake.abc.Messageable, disnake.abc.GuildChannel, Hashable):
         ----------
         name: :class:`str`
             The new channel's name.
-        topic: :class:`str`
+        topic: Optional[:class:`str`]
             The new channel's topic.
         position: :class:`int`
             The new channel's position.
@@ -818,7 +820,7 @@ class TextChannel(disnake.abc.Messageable, disnake.abc.GuildChannel, Hashable):
 
             .. versionadded:: 2.3
 
-        reason: :class:`str`
+        reason: Optional[:class:`str`]
             The reason for creating the thread. Shows up on the audit log.
 
         Raises
@@ -871,7 +873,7 @@ class TextChannel(disnake.abc.Messageable, disnake.abc.GuildChannel, Hashable):
         limit: Optional[int] = 50,
         before: Optional[Union[Snowflake, datetime.datetime]] = None,
     ) -> ArchivedThreadIterator:
-        """Returns an :class:`~disnake.AsyncIterator` that iterates over all archived threads in the guild.
+        """Returns an :class:`~disnake.AsyncIterator` that iterates over all archived threads in the channel.
 
         You must have :attr:`~Permissions.read_message_history` permission to use this. If iterating over private threads
         then :attr:`~Permissions.manage_threads` permission is also required.
@@ -1698,7 +1700,7 @@ class StageChannel(VocalGuildChannel):
             The stage instance's topic.
         privacy_level: :class:`StagePrivacyLevel`
             The stage instance's privacy level. Defaults to :attr:`StagePrivacyLevel.guild_only`.
-        reason: :class:`str`
+        reason: Optional[:class:`str`]
             The reason the stage instance was created. Shows up on the audit log.
         notify_everyone: :class:`bool`
             Whether to notify ``@everyone`` that the stage instance has started.
@@ -1990,6 +1992,50 @@ class CategoryChannel(disnake.abc.GuildChannel, Hashable):
             # the payload will always be the proper channel payload
             return self.__class__(state=self._state, guild=self.guild, data=payload)  # type: ignore
 
+    @overload
+    async def move(
+        self,
+        *,
+        beginning: bool,
+        offset: int = ...,
+        sync_permissions: bool = ...,
+        reason: Optional[str] = ...,
+    ) -> None:
+        ...
+
+    @overload
+    async def move(
+        self,
+        *,
+        end: bool,
+        offset: int = ...,
+        sync_permissions: bool = ...,
+        reason: Optional[str] = ...,
+    ) -> None:
+        ...
+
+    @overload
+    async def move(
+        self,
+        *,
+        before: Snowflake,
+        offset: int = ...,
+        sync_permissions: bool = ...,
+        reason: Optional[str] = ...,
+    ) -> None:
+        ...
+
+    @overload
+    async def move(
+        self,
+        *,
+        after: Snowflake,
+        offset: int = ...,
+        sync_permissions: bool = ...,
+        reason: Optional[str] = ...,
+    ) -> None:
+        ...
+
     @utils.copy_doc(disnake.abc.GuildChannel.move)
     async def move(self, **kwargs):
         kwargs.pop("category", None)
@@ -2069,6 +2115,8 @@ class CategoryChannel(disnake.abc.GuildChannel, Hashable):
         :class:`TextChannel`
             The newly created text channel.
         """
+        if "category" in options:
+            raise TypeError("got an unexpected keyword argument 'category'")
         return await self.guild.create_text_channel(name, category=self, **options)
 
     async def create_voice_channel(self, name: str, **options: Any) -> VoiceChannel:
@@ -2081,6 +2129,8 @@ class CategoryChannel(disnake.abc.GuildChannel, Hashable):
         :class:`VoiceChannel`
             The newly created voice channel.
         """
+        if "category" in options:
+            raise TypeError("got an unexpected keyword argument 'category'")
         return await self.guild.create_voice_channel(name, category=self, **options)
 
     async def create_stage_channel(self, name: str, **options: Any) -> StageChannel:
@@ -2095,6 +2145,8 @@ class CategoryChannel(disnake.abc.GuildChannel, Hashable):
         :class:`StageChannel`
             The newly created stage channel.
         """
+        if "category" in options:
+            raise TypeError("got an unexpected keyword argument 'category'")
         return await self.guild.create_stage_channel(name, category=self, **options)
 
     async def create_forum_channel(self, name: str, **options: Any) -> ForumChannel:
@@ -2109,6 +2161,8 @@ class CategoryChannel(disnake.abc.GuildChannel, Hashable):
         :class:`ForumChannel`
             The newly created forum channel.
         """
+        if "category" in options:
+            raise TypeError("got an unexpected keyword argument 'category'")
         return await self.guild.create_forum_channel(name, category=self, **options)
 
 
@@ -2119,6 +2173,11 @@ class NewsChannel(TextChannel):
     """
 
     type: ChannelType = ChannelType.news
+
+
+class ThreadWithMessage(NamedTuple):
+    thread: Thread
+    message: Message
 
 
 class ForumChannel(disnake.abc.GuildChannel, Hashable):
@@ -2411,6 +2470,82 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         """
         return self.guild.get_thread(thread_id)
 
+    @overload
+    async def create_thread(
+        self,
+        *,
+        name: str,
+        auto_archive_duration: AnyThreadArchiveDuration = ...,
+        slowmode_delay: int = ...,
+        content: str,
+        embed: Embed = ...,
+        file: File = ...,
+        suppress_embeds: bool = ...,
+        stickers: Sequence[Union[GuildSticker, StickerItem]] = ...,
+        allowed_mentions: AllowedMentions = ...,
+        view: View = ...,
+        components: Components = ...,
+        reason: Optional[str] = None,
+    ) -> ThreadWithMessage:
+        ...
+
+    @overload
+    async def create_thread(
+        self,
+        *,
+        name: str,
+        auto_archive_duration: AnyThreadArchiveDuration = ...,
+        slowmode_delay: int = ...,
+        content: str,
+        embed: Embed = ...,
+        files: List[File] = ...,
+        suppress_embeds: bool = ...,
+        stickers: Sequence[Union[GuildSticker, StickerItem]] = ...,
+        allowed_mentions: AllowedMentions = ...,
+        view: View = ...,
+        components: Components = ...,
+        reason: Optional[str] = None,
+    ) -> ThreadWithMessage:
+        ...
+
+    @overload
+    async def create_thread(
+        self,
+        *,
+        name: str,
+        auto_archive_duration: AnyThreadArchiveDuration = ...,
+        slowmode_delay: int = ...,
+        content: str,
+        embeds: List[Embed] = ...,
+        file: File = ...,
+        suppress_embeds: bool = ...,
+        stickers: Sequence[Union[GuildSticker, StickerItem]] = ...,
+        allowed_mentions: AllowedMentions = ...,
+        view: View = ...,
+        components: Components = ...,
+        reason: Optional[str] = None,
+    ) -> ThreadWithMessage:
+        ...
+
+    @overload
+    async def create_thread(
+        self,
+        *,
+        name: str,
+        auto_archive_duration: AnyThreadArchiveDuration = ...,
+        slowmode_delay: int = ...,
+        content: str,
+        embeds: List[Embed] = ...,
+        files: List[File] = ...,
+        suppress_embeds: bool = ...,
+        stickers: Sequence[Union[GuildSticker, StickerItem]] = ...,
+        allowed_mentions: AllowedMentions = ...,
+        view: View = ...,
+        components: Components = ...,
+        reason: Optional[str] = None,
+    ) -> ThreadWithMessage:
+        ...
+
     async def create_thread(
         self,
         *,
@@ -2422,12 +2557,13 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         embeds: List[Embed] = MISSING,
         file: File = MISSING,
         files: List[File] = MISSING,
+        suppress_embeds: bool = MISSING,
         stickers: Sequence[Union[GuildSticker, StickerItem]] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
         view: View = MISSING,
         components: Components = MISSING,
         reason: Optional[str] = None,
-    ) -> Thread:
+    ) -> ThreadWithMessage:
         """|coro|
 
         Creates a thread in this forum channel.
@@ -2446,7 +2582,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
             Specifies the slowmode rate limit for users in this thread, in seconds.
             A value of ``0`` disables slowmode. The maximum value possible is ``21600``.
             If not provided, slowmode is disabled.
-        content: Optional[:class:`str`]
+        content: :class:`str`
             The content of the message to send.
         embed: :class:`.Embed`
             The rich embed for the content to send. This cannot be mixed with the
@@ -2454,6 +2590,9 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         embeds: List[:class:`.Embed`]
             A list of embeds to send with the content. Must be a maximum of 10.
             This cannot be mixed with the ``embed`` parameter.
+        suppress_embeds: :class:`bool`
+            Whether to suppress embeds for the message. This hides
+            all embeds from the UI if set to ``True``.
         file: :class:`.File`
             The file to upload. This cannot be mixed with the ``files`` parameter.
         files: List[:class:`.File`]
@@ -2492,9 +2631,12 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
 
         Returns
         -------
-        :class:`Thread`
-            The newly created thread.
+        Tuple[:class:`Thread`, :class:`Message`]
+            A :class:`~typing.NamedTuple` with the newly created thread and the message sent in it.
+
+            These values can also be accessed through the ``thread`` and ``message`` fields.
         """
+        from .message import Message
         from .webhook.async_ import handle_message_parameters_dict
 
         params = handle_message_parameters_dict(
@@ -2519,14 +2661,20 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         elif params.files and not all(isinstance(file, File) for file in params.files):
             raise InvalidArgument("files parameter must be a list of File")
 
+        if suppress_embeds:
+            flags = MessageFlags.suppress_embeds.flag
+        else:
+            flags = 0
+
         try:
-            thread_data = await self._state.http.start_thread_in_forum_channel(
+            data = await self._state.http.start_thread_in_forum_channel(
                 self.id,
                 name=name,
                 auto_archive_duration=auto_archive_duration or self.default_auto_archive_duration,
                 rate_limit_per_user=slowmode_delay or 0,
                 type=ChannelType.public_thread.value,
                 files=params.files,
+                flags=flags,
                 reason=reason,
                 **params.payload,
             )
@@ -2535,10 +2683,13 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
                 for f in params.files:
                     f.close()
 
-        if view:
-            self._state.store_view(view, int(thread_data["id"]))
+        thread = Thread(guild=self.guild, data=data, state=self._state)
+        message = Message(channel=thread, data=data["message"], state=self._state)
 
-        return Thread(guild=self.guild, data=thread_data, state=self._state)
+        if view:
+            self._state.store_view(view, message.id)
+
+        return ThreadWithMessage(thread, message)
 
     def archived_threads(
         self,
