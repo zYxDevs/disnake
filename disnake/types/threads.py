@@ -28,7 +28,7 @@ from __future__ import annotations
 from typing import List, Literal, Optional, TypedDict
 
 from .message import Message
-from .snowflake import Snowflake
+from .snowflake import Snowflake, SnowflakeList
 
 ThreadType = Literal[10, 11, 12]
 ThreadArchiveDurationLiteral = Literal[60, 1440, 4320, 10080]
@@ -59,6 +59,7 @@ class _ThreadOptional(TypedDict, total=False):
     last_message_id: Optional[Snowflake]
     last_pin_timestamp: Optional[str]
     flags: int
+    applied_tags: SnowflakeList
 
 
 class Thread(_ThreadOptional):
@@ -81,3 +82,10 @@ class ThreadPaginationPayload(TypedDict):
     threads: List[Thread]
     members: List[ThreadMember]
     has_more: bool
+
+
+class ThreadTag(TypedDict):
+    id: Snowflake
+    name: str
+    emoji_id: Snowflake  # note: may be 0
+    emoji_name: Optional[str]
