@@ -1009,6 +1009,7 @@ class HTTPClient:
             "invitable",
             "default_auto_archive_duration",
             "flags",
+            "template",
         )
         payload = {k: v for k, v in options.items() if k in valid_keys}
         return self.request(r, reason=reason, json=payload)
