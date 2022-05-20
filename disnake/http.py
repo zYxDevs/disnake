@@ -1010,6 +1010,7 @@ class HTTPClient:
             "default_auto_archive_duration",
             "flags",
             "template",
+            "applied_tags",
         )
         payload = {k: v for k, v in options.items() if k in valid_keys}
         return self.request(r, reason=reason, json=payload)
@@ -1216,6 +1217,7 @@ class HTTPClient:
             "name",
             "auto_archive_duration",
             "rate_limit_per_user",
+            "applied_tags",
             "type",
         )
         valid_message_keys = (

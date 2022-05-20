@@ -27,7 +27,18 @@ from __future__ import annotations
 
 import asyncio
 import time
-from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from .abc import Messageable
 from .enums import ChannelType, ThreadArchiveDuration, try_enum, try_enum_to_int
@@ -402,6 +413,7 @@ class Thread(Messageable, Hashable):
         """
         return self.flags.pinned
 
+    # TODO: `applied_tags` instead of `tags`?
     @property
     def tags(self) -> List[ThreadTag]:
         """List[:class:`ThreadTag`]: The tags currently applied to this thread.
@@ -649,6 +661,7 @@ class Thread(Messageable, Hashable):
         slowmode_delay: int = MISSING,
         auto_archive_duration: AnyThreadArchiveDuration = MISSING,
         pinned: bool = MISSING,
+        tags: Sequence[Snowflake] = MISSING,
         reason: Optional[str] = None,
     ) -> Thread:
         """|coro|
@@ -684,6 +697,12 @@ class Thread(Messageable, Hashable):
 
             .. versionadded:: 2.5
 
+        tags: Sequence[:class:`abc.Snowflake`]
+            The new tags of the thread. Maximum of 2.
+            This is only available for threads created in a :class:`ForumChannel`.
+
+            .. versionadded:: 2.6
+
         reason: Optional[:class:`str`]
             The reason for editing this thread. Shows up on the audit log.
 
@@ -718,6 +737,8 @@ class Thread(Messageable, Hashable):
             flags = ChannelFlags._from_value(self._flags)
             flags.pinned = pinned
             payload["flags"] = flags.value
+        if tags is not MISSING:
+            payload["applied_tags"] = [t.id for t in tags]
 
         data = await self._state.http.edit_channel(self.id, **payload, reason=reason)
         # The data payload will always be a Thread payload
