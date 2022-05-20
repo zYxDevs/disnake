@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     from .role import Role
     from .stage_instance import StageInstance
     from .sticker import GuildSticker
-    from .threads import Thread
+    from .threads import Thread, ThreadTag
     from .types.audit_log import (
         AuditLogChange as AuditLogChangePayload,
         AuditLogEntry as AuditLogEntryPayload,
@@ -165,6 +165,29 @@ def _guild_hash_transformer(path: str) -> Callable[[AuditLogEntry, Optional[str]
     return _transform
 
 
+def _transform_tag(entry: AuditLogEntry, data: Optional[str]) -> Optional[Union[ThreadTag, Object]]:
+    if data is None:
+        return None
+    tag_id = int(data)
+    tag: Optional[ThreadTag] = None
+
+    # try getting thread parent
+    from .channel import ForumChannel  # cyclic import
+
+    thread = entry.guild.get_thread(entry._target_id)  # type: ignore
+    if thread and isinstance(thread.parent, ForumChannel):
+        tag = thread.parent.get_tag(tag_id)
+    else:
+        # if not found (possibly archived/uncached thread), search all forum channels
+        # TODO: remove this once threads from the audit log data are accessible, and use them instead
+        for forum in entry.guild.forum_channels:
+            if tag := forum.get_tag(tag_id):
+                break
+
+    return tag or Object(id=tag_id)
+
+
+T = TypeVar("T")
 EnumT = TypeVar("EnumT", bound=enums.Enum)
 FlagsT = TypeVar("FlagsT", bound=flags.BaseFlags)
 
@@ -181,6 +204,17 @@ def _flags_transformer(
 ) -> Callable[[AuditLogEntry, Optional[int]], Optional[FlagsT]]:
     def _transform(entry: AuditLogEntry, data: Optional[int]) -> Optional[FlagsT]:
         return flags_type._from_value(data) if data is not None else None
+
+    return _transform
+
+
+def _list_transformer(
+    func: Callable[[AuditLogEntry, Any], T]
+) -> Callable[[AuditLogEntry, Any], List[T]]:
+    def _transform(entry: AuditLogEntry, data: Any) -> List[T]:
+        if not data:
+            return []
+        return [func(entry, value) for value in data if value is not None]
 
     return _transform
 
@@ -286,6 +320,7 @@ class AuditLogChanges:
         'type':                          (None, _transform_type),
         'flags':                         (None, _flags_transformer(flags.ChannelFlags)),
         'system_channel_flags':          (None, _flags_transformer(flags.SystemChannelFlags)),
+        'applied_tags':                  ('tags', _list_transformer(_transform_tag))
     }
     # fmt: on
 

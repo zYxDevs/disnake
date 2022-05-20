@@ -2210,6 +2210,7 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.user_limit`
         - :attr:`~AuditLogDiff.slowmode_delay`
         - :attr:`~AuditLogDiff.nsfw`
+        - :attr:`~AuditLogDiff.template`
 
     .. attribute:: channel_delete
 
@@ -2901,6 +2902,7 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.slowmode_delay`
         - :attr:`~AuditLogDiff.invitable`
         - :attr:`~AuditLogDiff.flags`
+        - :attr:`~AuditLogDiff.tags`
 
         .. versionadded:: 2.0
 
@@ -4149,6 +4151,21 @@ AuditLogDiff
         See also :attr:`Guild.system_channel_flags`.
 
         :type: :class:`SystemChannelFlags`
+
+    .. attribute:: template
+
+        The template for new threads of a forum channel being changed.
+
+        :type: :class:`str`
+
+    .. attribute:: tags
+
+        The applied tags of a thread in a forum channel being changed.
+
+        If a tag is not found, then it is an :class:`Object` with the ID
+        being set.
+
+        :type: List[Union[:class:`ThreadTag`, :class:`Object`]]
 
 Webhook Support
 ------------------
