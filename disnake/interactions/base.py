@@ -78,6 +78,7 @@ if TYPE_CHECKING:
     from ..embeds import Embed
     from ..ext.commands import AutoShardedBot, Bot
     from ..file import File
+    from ..guild import GuildMessageable
     from ..mentions import AllowedMentions
     from ..state import ConnectionState
     from ..threads import Thread
@@ -86,7 +87,7 @@ if TYPE_CHECKING:
         ApplicationCommandOptionChoice as ApplicationCommandOptionChoicePayload,
         Interaction as InteractionPayload,
     )
-    from ..ui.action_row import Components
+    from ..ui.action_row import Components, MessageUIComponent, ModalUIComponent
     from ..ui.modal import Modal
     from ..ui.view import View
     from .message import MessageInteraction
@@ -224,7 +225,10 @@ class Interaction:
         self.channel_id: int = int(data["channel_id"])
         self.guild_id: Optional[int] = utils._get_as_snowflake(data, "guild_id")
         self.locale: Locale = try_enum(Locale, data["locale"])
-        self.guild_locale: Optional[Locale] = try_enum(Locale, data.get("guild_locale"))
+        guild_locale = data.get("guild_locale")
+        self.guild_locale: Optional[Locale] = (
+            try_enum(Locale, guild_locale) if guild_locale else None
+        )
         # one of user and member will always exist
         self.author: Union[User, Member] = MISSING
         self._permissions = None
@@ -275,7 +279,7 @@ class Interaction:
         return self.guild.me
 
     @utils.cached_slot_property("_cs_channel")
-    def channel(self) -> Union[TextChannel, Thread, VoiceChannel]:
+    def channel(self) -> Union[GuildMessageable, PartialMessageable]:
         """Union[:class:`abc.GuildChannel`, :class:`PartialMessageable`, :class:`Thread`]: The channel the interaction was sent from.
 
         Note that due to a Discord limitation, DM channels are not resolved since there is
@@ -288,7 +292,7 @@ class Interaction:
             type = (
                 None if self.guild_id is not None else ChannelType.private
             )  # could be a text, voice, or thread channel in a guild
-            return PartialMessageable(state=self._state, id=self.channel_id, type=type)  # type: ignore
+            return PartialMessageable(state=self._state, id=self.channel_id, type=type)
         return channel  # type: ignore
 
     @property
@@ -392,7 +396,7 @@ class Interaction:
         files: List[File] = MISSING,
         attachments: Optional[List[Attachment]] = MISSING,
         view: Optional[View] = MISSING,
-        components: Optional[Components] = MISSING,
+        components: Optional[Components[MessageUIComponent]] = MISSING,
         allowed_mentions: Optional[AllowedMentions] = None,
     ) -> InteractionMessage:
         """|coro|
@@ -572,7 +576,7 @@ class Interaction:
         files: List[File] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
         view: View = MISSING,
-        components: Components = MISSING,
+        components: Components[MessageUIComponent] = MISSING,
         tts: bool = False,
         ephemeral: bool = False,
         suppress_embeds: bool = False,
@@ -817,7 +821,7 @@ class InteractionResponse:
         files: List[File] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
         view: View = MISSING,
-        components: Components = MISSING,
+        components: Components[MessageUIComponent] = MISSING,
         tts: bool = False,
         ephemeral: bool = False,
         suppress_embeds: bool = False,
@@ -911,7 +915,7 @@ class InteractionResponse:
             for embed in embeds:
                 if embed._files:
                     files = files or []
-                    files += embed._files
+                    files.extend(embed._files.values())
 
         if files is not MISSING and len(files) > 10:
             raise ValueError("files cannot exceed maximum of 10 elements")
@@ -985,7 +989,7 @@ class InteractionResponse:
         attachments: Optional[List[Attachment]] = MISSING,
         allowed_mentions: AllowedMentions = MISSING,
         view: Optional[View] = MISSING,
-        components: Optional[Components] = MISSING,
+        components: Optional[Components[MessageUIComponent]] = MISSING,
     ) -> None:
         """|coro|
 
@@ -1091,7 +1095,7 @@ class InteractionResponse:
             for embed in embeds:
                 if embed._files:
                     files = files or []
-                    files += embed._files
+                    files.extend(embed._files.values())
 
         if files is not MISSING and len(files) > 10:
             raise ValueError("files cannot exceed maximum of 10 elements")
@@ -1207,7 +1211,7 @@ class InteractionResponse:
         *,
         title: str,
         custom_id: str,
-        components: Components,
+        components: Components[ModalUIComponent],
     ) -> None:
         ...
 
@@ -1217,7 +1221,7 @@ class InteractionResponse:
         *,
         title: str = None,
         custom_id: str = None,
-        components: Components = None,
+        components: Components[ModalUIComponent] = None,
     ) -> None:
         """|coro|
 
@@ -1346,8 +1350,8 @@ class InteractionMessage(Message):
         The actual contents of the message.
     embeds: List[:class:`Embed`]
         A list of embeds the message has.
-    channel: Union[:class:`TextChannel`, :class:`Thread`, :class:`DMChannel`, :class:`GroupChannel`, :class:`PartialMessageable`]
-        The :class:`TextChannel` or :class:`Thread` that the message was sent from.
+    channel: Union[:class:`TextChannel`, :class:`VoiceChannel`, :class:`Thread`, :class:`DMChannel`, :class:`GroupChannel`, :class:`PartialMessageable`]
+        The channel that the message was sent from.
         Could be a :class:`DMChannel` or :class:`GroupChannel` if it's a private message.
     reference: Optional[:class:`~disnake.MessageReference`]
         The message that this message references. This is only applicable to message replies.
@@ -1408,7 +1412,7 @@ class InteractionMessage(Message):
         file: File = ...,
         attachments: Optional[List[Attachment]] = ...,
         view: Optional[View] = ...,
-        components: Optional[Components] = ...,
+        components: Optional[Components[MessageUIComponent]] = ...,
         allowed_mentions: Optional[AllowedMentions] = ...,
     ) -> InteractionMessage:
         ...
@@ -1422,7 +1426,7 @@ class InteractionMessage(Message):
         files: List[File] = ...,
         attachments: Optional[List[Attachment]] = ...,
         view: Optional[View] = ...,
-        components: Optional[Components] = ...,
+        components: Optional[Components[MessageUIComponent]] = ...,
         allowed_mentions: Optional[AllowedMentions] = ...,
     ) -> InteractionMessage:
         ...
@@ -1436,7 +1440,7 @@ class InteractionMessage(Message):
         file: File = ...,
         attachments: Optional[List[Attachment]] = ...,
         view: Optional[View] = ...,
-        components: Optional[Components] = ...,
+        components: Optional[Components[MessageUIComponent]] = ...,
         allowed_mentions: Optional[AllowedMentions] = ...,
     ) -> InteractionMessage:
         ...
@@ -1450,7 +1454,7 @@ class InteractionMessage(Message):
         files: List[File] = ...,
         attachments: Optional[List[Attachment]] = ...,
         view: Optional[View] = ...,
-        components: Optional[Components] = ...,
+        components: Optional[Components[MessageUIComponent]] = ...,
         allowed_mentions: Optional[AllowedMentions] = ...,
     ) -> InteractionMessage:
         ...
