@@ -1,5 +1,14 @@
+import os
+
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
@@ -64,3 +73,6 @@ async def command_with_convmethod(
     other: OtherCustomClass,
 ):
     ...
+
+
+bot.run(os.getenv("BOT_TOKEN"))

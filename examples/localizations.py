@@ -2,11 +2,19 @@
 An example on how to set up localized application commands.
 """
 
+import os
 from typing import Any
 
 import disnake
 from disnake import Localized, OptionChoice
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
@@ -79,4 +87,4 @@ async def game_autocomp(inter: disnake.CommandInteraction, string: str):
 
 
 bot.i18n.load("locale/")
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

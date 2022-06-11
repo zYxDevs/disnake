@@ -2,8 +2,17 @@
 An example of old-style options.
 Not the most convenient syntax.
 """
+import os
+
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
@@ -27,3 +36,6 @@ async def command(inter, string, channel=None, number=1):
         f"Sending {string} {number}x to {channel.mention}", ephemeral=True
     )
     await channel.send(string * number)
+
+
+bot.run(os.getenv("BOT_TOKEN"))

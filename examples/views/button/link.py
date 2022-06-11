@@ -1,7 +1,15 @@
+import os
 from urllib.parse import quote_plus
 
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 
 class GoogleBot(commands.Bot):
@@ -37,4 +45,4 @@ async def google(ctx: commands.Context, *, query: str):
     await ctx.send(f"Google Result for: `{query}`", view=Google(query))
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

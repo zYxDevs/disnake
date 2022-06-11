@@ -1,8 +1,16 @@
 import asyncio
+import os
 
 import disnake
 import youtube_dl
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ""
@@ -138,4 +146,4 @@ async def on_ready():
 
 
 bot.add_cog(Music(bot))
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

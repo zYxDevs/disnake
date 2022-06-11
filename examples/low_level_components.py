@@ -2,8 +2,17 @@
 An example on how to send and process components without using views.
 """
 
+import os
+
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
@@ -112,4 +121,4 @@ async def grid_listener(inter: disnake.MessageInteraction):
 # the listener would have to be self.
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

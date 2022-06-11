@@ -1,6 +1,14 @@
 import asyncio
+import os
 
 import disnake
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 
 class MyClient(disnake.Client):
@@ -20,4 +28,4 @@ class MyClient(disnake.Client):
 
 
 client = MyClient()
-client.run("token")
+client.run(os.getenv("BOT_TOKEN"))

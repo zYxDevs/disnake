@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
@@ -6,6 +7,13 @@ import disnake
 # this file uses pytz in one of its examples but it is completely optional
 import pytz
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
@@ -116,3 +124,6 @@ async def get_game_user(
 @bot.slash_command()
 async def implicit_injection(inter: disnake.CommandInteraction, user: GameUser):
     """A command which uses an implicit injection"""
+
+
+bot.run(os.getenv("BOT_TOKEN"))

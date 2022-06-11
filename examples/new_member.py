@@ -1,6 +1,15 @@
 # This example requires the 'members' privileged intents
 
+import os
+
 import disnake
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 
 class MyClient(disnake.Client):
@@ -19,4 +28,4 @@ intents = disnake.Intents.default()
 intents.members = True
 
 client = MyClient(intents=intents)
-client.run("token")
+client.run(os.getenv("BOT_TOKEN"))

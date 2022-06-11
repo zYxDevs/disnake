@@ -1,5 +1,14 @@
+import os
+
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 description = """This is a script wherein the user can input
                  a UserID as well as message content, and the
@@ -50,4 +59,4 @@ async def userecho(ctx, member: disnake.Member, *, content):
     # TO_NOTE: This method cannot impersonate the member's roles, since it works using webhooks.
 
 
-client.run("YOUR_BOT_TOKEN")
+client.run(os.getenv("BOT_TOKEN"))

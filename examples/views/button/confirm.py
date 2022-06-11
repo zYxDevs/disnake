@@ -1,5 +1,14 @@
+import os
+
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 
 class Bot(commands.Bot):
@@ -53,4 +62,4 @@ async def ask(ctx: commands.Context):
         print("Cancelled...")
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

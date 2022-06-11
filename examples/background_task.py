@@ -1,5 +1,14 @@
+import os
+
 import disnake
 from disnake.ext import tasks
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 
 class MyClient(disnake.Client):
@@ -32,4 +41,4 @@ class MyClient(disnake.Client):
 
 
 client = MyClient()
-client.run("token")
+client.run(os.getenv("BOT_TOKEN"))

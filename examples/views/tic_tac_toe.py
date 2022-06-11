@@ -1,8 +1,15 @@
+import os
 from typing import List
 
 import disnake
 from disnake.ext import commands
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 # Defines a custom button that contains the logic of the game.
 # The ['TicTacToe'] bit is for type hinting purposes to tell your IDE or linter
@@ -138,4 +145,4 @@ async def tic(ctx: commands.Context):
     await ctx.send("Tic Tac Toe: X goes first", view=TicTacToe())
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

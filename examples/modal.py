@@ -1,7 +1,15 @@
 import asyncio
+import os
 
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
@@ -103,4 +111,4 @@ async def create_tag_low(inter: disnake.CommandInteraction):
     await modal_inter.response.send_message(embed=embed)
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

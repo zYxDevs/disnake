@@ -1,5 +1,14 @@
+import os
+
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
@@ -49,4 +58,4 @@ async def view(ctx):
     view.message = await ctx.send("These buttons will be disabled or removed", view=view)
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

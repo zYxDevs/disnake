@@ -1,7 +1,15 @@
+import os
 import typing
 
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 bot = commands.Bot(command_prefix=commands.when_mentioned, description="Nothing to see here!")
 
@@ -93,4 +101,4 @@ async def emoji(ctx: commands.GuildContext, emoji: disnake.PartialEmoji, *roles:
     )
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))

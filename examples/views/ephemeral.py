@@ -1,5 +1,14 @@
+import os
+
 import disnake
 from disnake.ext import commands
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    pass
+else:
+    load_dotenv()
 
 
 class EphemeralCounterBot(commands.Bot):
@@ -49,4 +58,4 @@ async def counter(ctx: commands.Context):
     await ctx.send("Press!", view=EphemeralCounter())
 
 
-bot.run("token")
+bot.run(os.getenv("BOT_TOKEN"))
