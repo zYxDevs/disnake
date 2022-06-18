@@ -2945,7 +2945,6 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         *,
         name: str,
         emoji: Optional[Union[str, Emoji, PartialEmoji]] = None,
-        # TODO: reason support tbd
         reason: Optional[str] = None,
     ) -> ThreadTag:
         """|coro|
