@@ -2519,7 +2519,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
             The new default auto archive duration in minutes for threads created in this channel.
             Must be one of ``60``, ``1440``, ``4320``, or ``10080``.
         template: Optional[:class:`str`]
-            The message template for new forum threads.
+            The message template for new forum threads. Up to 256 characters.
 
             .. versionadded:: 2.6
 
