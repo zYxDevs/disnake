@@ -354,6 +354,13 @@ class GuildChannel(ABC):
                 else None
             )
 
+        try:
+            flags = options["flags"]
+        except KeyError:
+            pass
+        else:
+            options["flags"] = None if flags is None else flags.value
+
         lock_permissions = options.pop("sync_permissions", False)
 
         try:

@@ -620,6 +620,7 @@ class Thread(Messageable, Hashable):
         slowmode_delay: int = MISSING,
         auto_archive_duration: AnyThreadArchiveDuration = MISSING,
         pinned: bool = MISSING,
+        flags: ChannelFlags = ...,
         reason: Optional[str] = None,
     ) -> Thread:
         """|coro|
@@ -659,6 +660,11 @@ class Thread(Messageable, Hashable):
             The reason for editing this thread. Shows up on the audit log.
 
             .. versionadded:: 2.5
+
+        flags: :class:`.ChannelFlags`
+            The new channel flags for this channel.
+
+            .. versionadded:: 2.6
 
         Raises
         ------
