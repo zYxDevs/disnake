@@ -354,6 +354,19 @@ class GuildChannel(ABC):
                 else None
             )
 
+        flags: Optional[ChannelFlags] = options.pop("flags", None)
+
+        try:
+            require_tag = options.pop("require_tag")
+        except KeyError:
+            pass
+        else:
+            flags = flags or ChannelFlags._from_value(self._flags)
+            flags.require_tag = require_tag
+
+        if flags is not None:
+            options["flags"] = flags.value
+
         lock_permissions = options.pop("sync_permissions", False)
 
         try:

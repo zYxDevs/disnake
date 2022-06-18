@@ -2409,6 +2409,14 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         """
         return self.nsfw
 
+    # TODO: name, property
+    def requires_tag(self) -> bool:
+        """Whether all newly created threads in this channel are required to have a tag.
+
+        :return type: :class:`bool`
+        """
+        return self.flags.require_tag
+
     @property
     def last_thread(self) -> Optional[Thread]:
         """Gets the last created thread in this channel from the cache.
@@ -2465,6 +2473,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         slowmode_delay: Optional[int] = ...,
         default_auto_archive_duration: AnyThreadArchiveDuration = ...,
         overwrites: Mapping[Union[Role, Member, Snowflake], PermissionOverwrite] = ...,
+        require_tag: bool = ...,
         reason: Optional[str] = ...,
     ) -> Optional[ForumChannel]:
         ...
@@ -2511,6 +2520,11 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
             Must be one of ``60``, ``1440``, ``4320``, or ``10080``.
         template: Optional[:class:`str`]
             The message template for new forum threads.
+
+            .. versionadded:: 2.6
+
+        require_tag: :class:`bool`
+            Whether all newly created threads are required to have a tag.
 
             .. versionadded:: 2.6
 
