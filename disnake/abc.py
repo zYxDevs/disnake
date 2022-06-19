@@ -54,6 +54,7 @@ from .file import File
 from .flags import ChannelFlags, MessageFlags
 from .invite import Invite
 from .mentions import AllowedMentions
+from .partial_emoji import PartialEmoji
 from .permissions import PermissionOverwrite, Permissions
 from .role import Role
 from .sticker import GuildSticker, StickerItem
@@ -366,6 +367,20 @@ class GuildChannel(ABC):
 
         if flags is not None:
             options["flags"] = flags.value
+
+        try:
+            default_reaction_emoji = options.pop("default_reaction_emoji")
+        except KeyError:
+            pass
+        else:
+            if default_reaction_emoji is not None:
+                emoji_name, emoji_id = PartialEmoji._to_name_id(default_reaction_emoji)
+                options["default_reaction_emoji"] = {
+                    "emoji_name": emoji_name,
+                    "emoji_id": emoji_id,
+                }
+            else:
+                options["default_reaction_emoji"] = None
 
         lock_permissions = options.pop("sync_permissions", False)
 

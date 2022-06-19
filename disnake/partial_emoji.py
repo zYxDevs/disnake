@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 from . import utils
 from .asset import Asset, AssetMixin
@@ -36,6 +36,7 @@ __all__ = ("PartialEmoji",)
 if TYPE_CHECKING:
     from datetime import datetime
 
+    from .emoji import Emoji
     from .state import ConnectionState
     from .types.activity import ActivityEmoji as ActivityEmojiPayload
     from .types.message import PartialEmoji as PartialEmojiPayload
@@ -271,3 +272,36 @@ class PartialEmoji(_EmojiTag, AssetMixin):
             raise TypeError("PartialEmoji is not a custom emoji")
 
         return await super().read()
+
+    @staticmethod
+    def _to_name_id(
+        emoji: Optional[Union[str, Emoji, PartialEmoji]]
+    ) -> Tuple[Optional[str], Optional[int]]:
+        if isinstance(emoji, _EmojiTag):
+            return None, emoji.id
+        else:
+            return emoji, None
+
+    @staticmethod
+    def _from_name_id(
+        name: Optional[str], id: Optional[int], *, state: ConnectionState
+    ) -> Optional[Union[Emoji, PartialEmoji]]:
+        # NOTE: id may also be `0`
+
+        if not (name or id):
+            return None
+
+        emoji: Optional[Union[Emoji, PartialEmoji]] = None
+        if id:
+            emoji = state.get_emoji(id)
+        if not emoji:
+            emoji = PartialEmoji.with_state(
+                state=state,
+                # TODO: this renders correctly, but apparently shouldn't be done
+                # according to https://github.com/discord/discord-api-docs/pull/4983
+                name=name or "_",
+                id=id,
+                # note: `animated` is unknown but presumably we already got the (animated)
+                # emoji from the guild cache at this point
+            )
+        return emoji

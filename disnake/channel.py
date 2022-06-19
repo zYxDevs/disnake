@@ -59,6 +59,7 @@ from .file import File
 from .flags import ChannelFlags, MessageFlags
 from .iterators import ArchivedThreadIterator
 from .mixins import Hashable
+from .partial_emoji import PartialEmoji
 from .permissions import PermissionOverwrite, Permissions
 from .stage_instance import StageInstance
 from .threads import Thread, ThreadTag
@@ -84,7 +85,6 @@ if TYPE_CHECKING:
     from .guild import Guild, GuildChannel as GuildChannelType
     from .member import Member, VoiceState
     from .message import AllowedMentions, Message, PartialMessage
-    from .partial_emoji import PartialEmoji
     from .role import Role
     from .state import ConnectionState
     from .sticker import GuildSticker, StickerItem
@@ -2313,8 +2313,10 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         "default_auto_archive_duration",
         "guild",
         "slowmode_delay",
-        "_available_tags",
         "template",
+        "_available_tags",
+        "_default_reaction_emoji_id",
+        "_default_reaction_emoji_name",
         "_state",
         "_type",
         "_overwrites",
@@ -2354,12 +2356,21 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
             "default_auto_archive_duration", 1440
         )
         self.slowmode_delay: int = data.get("rate_limit_per_user", 0)
+
         tags = [
             ThreadTag(data=tag, channel=self, state=self._state)
             for tag in data.get("available_tags", [])
         ]
         self._available_tags: Dict[int, ThreadTag] = {tag.id: tag for tag in tags}
         self.template: Optional[str] = data.get("template") or None
+
+        default_reaction_emoji = data.get("default_reaction_emoji") or {}
+        # emoji_id may be `0`, use `None` instead
+        self._default_reaction_emoji_id: Optional[int] = (
+            utils._get_as_snowflake(default_reaction_emoji, "emoji_id") or None
+        )
+        self._default_reaction_emoji_name: Optional[str] = default_reaction_emoji.get("emoji_name")
+
         self._fill_overwrites(data)
 
     async def _get_channel(self) -> ForumChannel:
@@ -2418,6 +2429,13 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         return self.flags.require_tag
 
     @property
+    def default_reaction_emoji(self) -> Optional[Union[Emoji, PartialEmoji]]:
+        """Optional[Union[:class:`Emoji`, :class:`PartialEmoji`]]: TODO"""
+        return PartialEmoji._from_name_id(
+            self._default_reaction_emoji_name, self._default_reaction_emoji_id, state=self._state
+        )
+
+    @property
     def last_thread(self) -> Optional[Thread]:
         """Gets the last created thread in this channel from the cache.
 
@@ -2474,6 +2492,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         default_auto_archive_duration: AnyThreadArchiveDuration = ...,
         overwrites: Mapping[Union[Role, Member, Snowflake], PermissionOverwrite] = ...,
         require_tag: bool = ...,
+        default_reaction_emoji: Union[str, Emoji, PartialEmoji] = ...,
         reason: Optional[str] = ...,
     ) -> Optional[ForumChannel]:
         ...
@@ -2525,6 +2544,11 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
 
         require_tag: :class:`bool`
             Whether all newly created threads are required to have a tag.
+
+            .. versionadded:: 2.6
+
+        default_reaction_emoji: Union[:class:`str`, :class:`Emoji`, :class:`PartialEmoji`]
+            TODO
 
             .. versionadded:: 2.6
 
@@ -2982,7 +3006,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         :class:`ThreadTag`
             The newly created tag.
         """
-        emoji_id, emoji_name = ThreadTag._get_emoji_params(emoji)
+        emoji_name, emoji_id = PartialEmoji._to_name_id(emoji)
 
         # note: returns updated channel data instead of tag data
         data = await self._state.http.create_thread_tag(
