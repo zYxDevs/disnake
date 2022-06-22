@@ -2429,7 +2429,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         return self.flags.require_tag
 
     @property
-    def default_reaction_emoji(self) -> Optional[Union[Emoji, PartialEmoji]]:
+    def default_reaction(self) -> Optional[Union[Emoji, PartialEmoji]]:
         """Optional[Union[:class:`Emoji`, :class:`PartialEmoji`]]:
         The default emoji shown for reacting to new threads.
 
@@ -2496,7 +2496,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         default_auto_archive_duration: AnyThreadArchiveDuration = ...,
         overwrites: Mapping[Union[Role, Member, Snowflake], PermissionOverwrite] = ...,
         require_tag: bool = ...,
-        default_reaction_emoji: Union[str, Emoji, PartialEmoji] = ...,
+        default_reaction: Union[str, Emoji, PartialEmoji] = ...,
         reason: Optional[str] = ...,
     ) -> Optional[ForumChannel]:
         ...
@@ -2551,7 +2551,7 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
 
             .. versionadded:: 2.6
 
-        default_reaction_emoji: Union[:class:`str`, :class:`Emoji`, :class:`PartialEmoji`]
+        default_reaction: Union[:class:`str`, :class:`Emoji`, :class:`PartialEmoji`]
             The default emoji shown for reacting to new threads.
 
             .. versionadded:: 2.6

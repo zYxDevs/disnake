@@ -369,7 +369,7 @@ class GuildChannel(ABC):
             options["flags"] = flags.value
 
         try:
-            default_reaction_emoji = options.pop("default_reaction_emoji")
+            default_reaction_emoji = options.pop("default_reaction")
         except KeyError:
             pass
         else:
