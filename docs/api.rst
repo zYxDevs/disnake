@@ -2929,6 +2929,7 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.slowmode_delay`
         - :attr:`~AuditLogDiff.invitable`
         - :attr:`~AuditLogDiff.flags`
+        - :attr:`~AuditLogDiff.tags`
 
         .. versionadded:: 2.0
 
