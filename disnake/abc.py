@@ -369,12 +369,12 @@ class GuildChannel(ABC):
             options["flags"] = flags.value
 
         try:
-            default_reaction_emoji = options.pop("default_reaction")
+            default_reaction = options.pop("default_reaction")
         except KeyError:
             pass
         else:
-            if default_reaction_emoji is not None:
-                emoji_name, emoji_id = PartialEmoji._to_name_id(default_reaction_emoji)
+            if default_reaction is not None:
+                emoji_name, emoji_id = PartialEmoji._to_name_id(default_reaction)
                 options["default_reaction_emoji"] = {
                     "emoji_name": emoji_name,
                     "emoji_id": emoji_id,

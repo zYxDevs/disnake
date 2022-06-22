@@ -48,6 +48,7 @@ from .colour import Colour
 from .invite import Invite
 from .mixins import Hashable
 from .object import Object
+from .partial_emoji import PartialEmoji
 from .permissions import PermissionOverwrite, Permissions
 
 __all__ = (
@@ -75,7 +76,10 @@ if TYPE_CHECKING:
         AuditLogEntry as AuditLogEntryPayload,
         _AuditLogChange_ApplicationCommandPermissions as AuditLogChangeAppCmdPermsPayload,
     )
-    from .types.channel import PermissionOverwrite as PermissionOverwritePayload
+    from .types.channel import (
+        ForumEmoji as ForumEmojiPayload,
+        PermissionOverwrite as PermissionOverwritePayload,
+    )
     from .types.role import Role as RolePayload
     from .types.snowflake import Snowflake
     from .types.threads import ThreadTag as ThreadTagPayload
@@ -268,6 +272,16 @@ def _transform_guild_scheduled_event_image(
     return Asset._from_guild_scheduled_event_image(entry._state, entry._target_id, data)  # type: ignore
 
 
+def _transform_forum_emoji(
+    entry: AuditLogEntry, data: Optional[ForumEmojiPayload]
+) -> Optional[Union[Emoji, PartialEmoji]]:
+    if data is None:
+        return None
+    return PartialEmoji._from_name_id(
+        data.get("emoji_name"), utils._get_as_snowflake(data, "emoji_id"), state=entry._state
+    )
+
+
 class AuditLogDiff:
     def __len__(self) -> int:
         return len(self.__dict__)
@@ -323,6 +337,7 @@ class AuditLogChanges:
         'default_message_notifications': ('default_notifications', _enum_transformer(enums.NotificationLevel)),
         'communication_disabled_until':  ('timeout', _transform_datetime),
         'image_hash':                    ('image', _transform_guild_scheduled_event_image),
+        'default_reaction_emoji':        ('default_reaction', _transform_forum_emoji),
         'video_quality_mode':            (None, _enum_transformer(enums.VideoQualityMode)),
         'preferred_locale':              (None, _enum_transformer(enums.Locale)),
         'privacy_level':                 (None, _transform_privacy_level),

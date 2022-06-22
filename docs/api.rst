@@ -2182,6 +2182,7 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.user_limit`
         - :attr:`~AuditLogDiff.slowmode_delay`
         - :attr:`~AuditLogDiff.nsfw`
+        - :attr:`~AuditLogDiff.default_reaction`
 
     .. attribute:: channel_update
 
@@ -2212,6 +2213,7 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.nsfw`
         - :attr:`~AuditLogDiff.template`
         - :attr:`~AuditLogDiff.available_tags`
+        - :attr:`~AuditLogDiff.default_reaction`
 
     .. attribute:: channel_delete
 
@@ -2236,6 +2238,9 @@ of :class:`enum.Enum`.
         - :attr:`~AuditLogDiff.user_limit`
         - :attr:`~AuditLogDiff.slowmode_delay`
         - :attr:`~AuditLogDiff.nsfw`
+        - :attr:`~AuditLogDiff.template`
+        - :attr:`~AuditLogDiff.available_tags`
+        - :attr:`~AuditLogDiff.default_reaction`
 
     .. attribute:: overwrite_create
 
@@ -4173,6 +4178,12 @@ AuditLogDiff
         The available tags for threads in a forum channel being changed.
 
         :type: List[:class:`ThreadTag`]
+
+    .. attribute:: default_reaction
+
+        The default emoji shown for reacting to new threads being changed.
+
+        :type: Optional[Union[:class:`Emoji`, :class:`PartialEmoji`]]
 
 Webhook Support
 ------------------
