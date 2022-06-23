@@ -4400,12 +4400,21 @@ Button
     :members:
     :inherited-members:
 
-SelectMenu
-~~~~~~~~~~~
+BaseSelectMenu
+~~~~~~~~~~~~~~~
 
-.. attributetable:: SelectMenu
+.. attributetable:: BaseSelectMenu
 
-.. autoclass:: SelectMenu()
+.. autoclass:: BaseSelectMenu()
+    :members:
+    :inherited-members:
+
+StringSelectMenu
+~~~~~~~~~~~~~~~~~
+
+.. attributetable:: StringSelectMenu
+
+.. autoclass:: StringSelectMenu()
     :members:
     :inherited-members:
 

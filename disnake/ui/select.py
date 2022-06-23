@@ -40,7 +40,7 @@ from typing import (
     overload,
 )
 
-from ..components import SelectMenu, SelectOption
+from ..components import SelectOption, StringSelectMenu
 from ..enums import ComponentType
 from ..partial_emoji import PartialEmoji
 from ..utils import MISSING
@@ -120,7 +120,7 @@ class Select(Item[V]):
         "disabled",
     )
     # We have to set this to MISSING in order to overwrite the abstract property from WrappedComponent
-    _underlying: SelectMenu = MISSING
+    _underlying: StringSelectMenu = MISSING
 
     @overload
     def __init__(
@@ -166,7 +166,7 @@ class Select(Item[V]):
         self._provided_custom_id = custom_id is not MISSING
         custom_id = os.urandom(16).hex() if custom_id is MISSING else custom_id
         options = [] if options is MISSING else _parse_select_options(options)
-        self._underlying = SelectMenu._raw_construct(
+        self._underlying = StringSelectMenu._raw_construct(
             custom_id=custom_id,
             type=ComponentType.string_select,
             placeholder=placeholder,
@@ -315,14 +315,14 @@ class Select(Item[V]):
     def width(self) -> int:
         return 5
 
-    def refresh_component(self, component: SelectMenu) -> None:
+    def refresh_component(self, component: StringSelectMenu) -> None:
         self._underlying = component
 
     def refresh_state(self, interaction: MessageInteraction) -> None:
         self._selected_values = interaction.values  # type: ignore
 
     @classmethod
-    def from_component(cls: Type[S], component: SelectMenu) -> S:
+    def from_component(cls: Type[S], component: StringSelectMenu) -> S:
         return cls(
             custom_id=component.custom_id,
             placeholder=component.placeholder,

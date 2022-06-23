@@ -45,9 +45,13 @@ from .partial_emoji import PartialEmoji, _EmojiTag
 from .utils import MISSING, get_slots
 
 if TYPE_CHECKING:
+    # TODO: remove
+    from typing_extensions import TypeAlias
+
     from .emoji import Emoji
     from .types.components import (
         ActionRow as ActionRowPayload,
+        BaseSelectMenu as BaseSelectMenuPayload,
         ButtonComponent as ButtonComponentPayload,
         Component as ComponentPayload,
         SelectOption as SelectOptionPayload,
@@ -59,19 +63,18 @@ __all__ = (
     "Component",
     "ActionRow",
     "Button",
-    "SelectMenu",
+    "BaseSelectMenu",
+    "StringSelectMenu",
     "SelectOption",
     "TextInput",
 )
 
 C = TypeVar("C", bound="Component")
 
-MessageComponent = Union["Button", "SelectMenu"]
+AnySelectMenu: TypeAlias = "StringSelectMenu"  # TODO
+MessageComponent = Union["Button", "AnySelectMenu"]
 
-if TYPE_CHECKING:  # TODO: remove when we add modal select support
-    from typing_extensions import TypeAlias
-
-# ModalComponent = Union["TextInput", "SelectMenu"]
+# ModalComponent = Union["TextInput", "AnySelectMenu"]
 ModalComponent: TypeAlias = "TextInput"
 NestedComponent = Union[MessageComponent, ModalComponent]
 ComponentT = TypeVar("ComponentT", bound=NestedComponent)
@@ -84,7 +87,7 @@ class Component:
 
     - :class:`ActionRow`
     - :class:`Button`
-    - :class:`SelectMenu`
+    - subtypes of :class:`BaseSelectMenu` (:class:`StringSelectMenu`, ...)
     - :class:`TextInput`
 
     This class is abstract and cannot be instantiated.
@@ -135,7 +138,7 @@ class ActionRow(Component, Generic[ComponentT]):
     ----------
     type: :class:`ComponentType`
         The type of component.
-    children: List[Union[:class:`Button`, :class:`SelectMenu`, :class:`TextInput`]]
+    children: List[Union[:class:`Button`, :class:`BaseSelectMenu`, :class:`TextInput`]]
         The children components that this holds, if any.
     """
 
@@ -228,16 +231,69 @@ class Button(Component):
         return payload  # type: ignore
 
 
-class SelectMenu(Component):
-    """Represents a select menu from the Discord Bot UI Kit.
+class BaseSelectMenu(Component):
+    """Represents an abstract select menu from the Discord Bot UI Kit.
 
     A select menu is functionally the same as a dropdown, however
     on mobile it renders a bit differently.
 
-    .. note::
+    The currently supported select menus are:
 
-        The user constructible and usable type to create a select menu is
-        :class:`disnake.ui.Select` not this one.
+    - :class:`~disnake.StringSelectMenu`
+
+    .. versionadded:: 2.6
+
+    Attributes
+    ----------
+    custom_id: Optional[:class:`str`]
+        The ID of the select menu that gets received during an interaction.
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select menu is disabled or not.
+    """
+
+    __slots__: Tuple[str, ...] = (
+        "custom_id",
+        "placeholder",
+        "min_values",
+        "max_values",
+        "disabled",
+    )
+
+    __repr_info__: ClassVar[Tuple[str, ...]] = __slots__
+
+    def __init__(self, data: BaseSelectMenuPayload):
+        self.type = ComponentType.string_select
+        self.custom_id: str = data["custom_id"]
+        self.placeholder: Optional[str] = data.get("placeholder")
+        self.min_values: int = data.get("min_values", 1)
+        self.max_values: int = data.get("max_values", 1)
+        self.disabled: bool = data.get("disabled", False)
+
+    def to_dict(self) -> BaseSelectMenuPayload:
+        payload: BaseSelectMenuPayload = {
+            "type": self.type.value,
+            "custom_id": self.custom_id,
+            "min_values": self.min_values,
+            "max_values": self.max_values,
+            "disabled": self.disabled,
+        }
+
+        if self.placeholder:
+            payload["placeholder"] = self.placeholder
+
+        return payload
+
+
+class StringSelectMenu(BaseSelectMenu):
+    """Represents a string select menu from the Discord Bot UI Kit.
 
     .. versionadded:: 2.0
 
@@ -253,52 +309,30 @@ class SelectMenu(Component):
     max_values: :class:`int`
         The maximum number of items that must be chosen for this select menu.
         Defaults to 1 and must be between 1 and 25.
-    options: List[:class:`SelectOption`]
-        A list of options that can be selected in this select menu.
     disabled: :class:`bool`
         Whether the select menu is disabled or not.
+    options: List[:class:`SelectOption`]
+        A list of options that can be selected in this select menu.
     """
 
-    __slots__: Tuple[str, ...] = (
-        "custom_id",
-        "placeholder",
-        "min_values",
-        "max_values",
-        "options",
-        "disabled",
-    )
+    __slots__: Tuple[str, ...] = ("options",)
 
-    __repr_info__: ClassVar[Tuple[str, ...]] = __slots__
+    __repr_info__: ClassVar[Tuple[str, ...]] = BaseSelectMenu.__repr_info__ + __slots__
 
     def __init__(self, data: StringSelectMenuPayload):
-        self.type = ComponentType.string_select
-        self.custom_id: str = data["custom_id"]
-        self.placeholder: Optional[str] = data.get("placeholder")
-        self.min_values: int = data.get("min_values", 1)
-        self.max_values: int = data.get("max_values", 1)
+        super().__init__(data)
         self.options: List[SelectOption] = [
             SelectOption.from_dict(option) for option in data.get("options", [])
         ]
-        self.disabled: bool = data.get("disabled", False)
 
     def to_dict(self) -> StringSelectMenuPayload:
-        payload: StringSelectMenuPayload = {
-            "type": self.type.value,
-            "custom_id": self.custom_id,
-            "min_values": self.min_values,
-            "max_values": self.max_values,
-            "options": [op.to_dict() for op in self.options],
-            "disabled": self.disabled,
-        }
-
-        if self.placeholder:
-            payload["placeholder"] = self.placeholder
-
+        payload = cast("StringSelectMenuPayload", super().to_dict())
+        payload["options"] = [op.to_dict() for op in self.options]
         return payload
 
 
 class SelectOption:
-    """Represents a select menu's option.
+    """Represents a string select menu's option.
 
     These can be created by users.
 
@@ -493,7 +527,7 @@ def _component_factory(data: ComponentPayload, *, type: Type[C] = Component) -> 
     elif component_type == 2:
         return Button(data)  # type: ignore
     elif component_type == 3:
-        return SelectMenu(data)  # type: ignore
+        return StringSelectMenu(data)  # type: ignore
     elif component_type == 4:
         return TextInput(data)  # type: ignore
     else:
