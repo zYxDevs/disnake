@@ -34,7 +34,7 @@ ButtonStyle = Literal[1, 2, 3, 4, 5]
 TextInputStyle = Literal[1, 2]
 
 
-Component = Union["ActionRow", "ButtonComponent", "SelectMenu", "TextInput"]
+Component = Union["ActionRow", "ButtonComponent", "StringSelectMenu", "TextInput"]
 
 
 class ActionRow(TypedDict):
@@ -55,13 +55,6 @@ class ButtonComponent(_ButtonComponentOptional):
     style: ButtonStyle
 
 
-class _SelectMenuOptional(TypedDict, total=False):
-    placeholder: str
-    min_values: int
-    max_values: int
-    disabled: bool
-
-
 class _SelectOptionsOptional(TypedDict, total=False):
     description: str
     emoji: PartialEmoji
@@ -73,9 +66,19 @@ class SelectOption(_SelectOptionsOptional):
     default: bool
 
 
-class SelectMenu(_SelectMenuOptional):
-    type: Literal[3]
+class _SelectMenuOptional(TypedDict, total=False):
+    placeholder: str
+    min_values: int
+    max_values: int
+    disabled: bool
+
+
+class _SelectMenu(_SelectMenuOptional):
     custom_id: str
+
+
+class StringSelectMenu(_SelectMenu):
+    type: Literal[3]
     options: List[SelectOption]
 
 

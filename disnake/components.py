@@ -50,8 +50,8 @@ if TYPE_CHECKING:
         ActionRow as ActionRowPayload,
         ButtonComponent as ButtonComponentPayload,
         Component as ComponentPayload,
-        SelectMenu as SelectMenuPayload,
         SelectOption as SelectOptionPayload,
+        StringSelectMenu as StringSelectMenuPayload,
         TextInput as TextInputPayload,
     )
 
@@ -270,7 +270,7 @@ class SelectMenu(Component):
 
     __repr_info__: ClassVar[Tuple[str, ...]] = __slots__
 
-    def __init__(self, data: SelectMenuPayload):
+    def __init__(self, data: StringSelectMenuPayload):
         self.type = ComponentType.string_select
         self.custom_id: str = data["custom_id"]
         self.placeholder: Optional[str] = data.get("placeholder")
@@ -281,8 +281,8 @@ class SelectMenu(Component):
         ]
         self.disabled: bool = data.get("disabled", False)
 
-    def to_dict(self) -> SelectMenuPayload:
-        payload: SelectMenuPayload = {
+    def to_dict(self) -> StringSelectMenuPayload:
+        payload: StringSelectMenuPayload = {
             "type": self.type.value,
             "custom_id": self.custom_id,
             "min_values": self.min_values,
