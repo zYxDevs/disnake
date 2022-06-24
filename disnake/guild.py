@@ -185,9 +185,9 @@ class Guild(Hashable):
     description: Optional[:class:`str`]
         The guild's description.
     mfa_level: :class:`int`
-        Indicates the guild's two factor authorisation level. If this value is 0 then
-        the guild does not require 2FA for their administrative members. If the value is
-        1 then they do.
+        Indicates the guild's two-factor authentication level. If this value is 0 then
+        the guild does not require 2FA for their administrative members
+        to take moderation actions. If the value is 1, then 2FA is required.
     verification_level: :class:`VerificationLevel`
         The guild's verification level.
     explicit_content_filter: :class:`ContentFilter`
@@ -1429,6 +1429,7 @@ class Guild(Hashable):
         *,
         topic: Optional[str] = MISSING,
         position: int = MISSING,
+        bitrate: int = MISSING,
         overwrites: Dict[Union[Role, Member], PermissionOverwrite] = MISSING,
         category: Optional[CategoryChannel] = None,
         rtc_region: Optional[Union[str, VoiceRegion]] = MISSING,
@@ -1464,6 +1465,11 @@ class Guild(Hashable):
         position: :class:`int`
             The position in the channel list. This is a number that starts
             at 0. e.g. the top channel is position 0.
+        bitrate: :class:`int`
+            The channel's preferred audio bitrate in bits per second.
+
+            .. versionadded:: 2.6
+
         rtc_region: Optional[Union[:class:`str`, :class:`VoiceRegion`]]
             The region for the stage channel's voice communication.
             A value of ``None`` indicates automatic voice region detection.
@@ -1491,6 +1497,9 @@ class Guild(Hashable):
 
         if topic is not MISSING:
             options["topic"] = topic
+
+        if bitrate is not MISSING:
+            options["bitrate"] = bitrate
 
         if position is not MISSING:
             options["position"] = position
@@ -2146,6 +2155,10 @@ class Guild(Hashable):
         .. versionadded:: 2.3
 
         .. versionchanged:: 2.6
+            Now raises :exc:`TypeError` instead of :exc:`ValueError` for
+            invalid parameter types.
+
+        .. versionchanged:: 2.6
             Removed ``channel_id`` parameter in favor of ``channel``.
 
         Parameters
@@ -2187,7 +2200,9 @@ class Guild(Hashable):
         HTTPException
             The request failed.
         TypeError
-            The ``image`` asset is a lottie sticker (see :func:`Sticker.read`).
+            The ``image`` asset is a lottie sticker (see :func:`Sticker.read`),
+            or one of ``entity_type``, ``privacy_level``, or ``entity_metadata``
+            is not of the correct type.
 
         Returns
         -------
@@ -2195,12 +2210,12 @@ class Guild(Hashable):
             The newly created guild scheduled event.
         """
         if not isinstance(entity_type, GuildScheduledEventEntityType):
-            raise ValueError("entity_type must be an instance of GuildScheduledEventEntityType")
+            raise TypeError("entity_type must be an instance of GuildScheduledEventEntityType")
 
         if privacy_level is MISSING:
             privacy_level = GuildScheduledEventPrivacyLevel.guild_only
         elif not isinstance(privacy_level, GuildScheduledEventPrivacyLevel):
-            raise ValueError("privacy_level must be an instance of GuildScheduledEventPrivacyLevel")
+            raise TypeError("privacy_level must be an instance of GuildScheduledEventPrivacyLevel")
 
         fields: Dict[str, Any] = {
             "name": name,
@@ -2211,7 +2226,7 @@ class Guild(Hashable):
 
         if entity_metadata is not MISSING:
             if not isinstance(entity_metadata, GuildScheduledEventMetadata):
-                raise ValueError(
+                raise TypeError(
                     "entity_metadata must be an instance of GuildScheduledEventMetadata"
                 )
 
@@ -3736,6 +3751,38 @@ class Guild(Hashable):
             The widget image URL.
         """
         return self._state.http.widget_image_url(self.id, style=str(style))
+
+    async def edit_mfa_level(self, mfa_level: MFALevel, *, reason: Optional[str] = None) -> None:
+        """|coro|
+
+        Edits the two-factor authentication level of the guild.
+
+        You must be the guild owner to use this.
+
+        .. versionadded:: 2.6
+
+        Parameters
+        ----------
+        mfa_level: :class:`int`
+            The new 2FA level. If set to 0, the guild does not require
+            2FA for their administrative members to take
+            moderation actions. If set to 1, then 2FA is required.
+        reason: Optional[:class:`str`]
+            The reason for editing the mfa level. Shows up on the audit log.
+
+        Raises
+        ------
+        HTTPException
+            Editing the 2FA level failed.
+        ValueError
+            You are not the owner of the guild.
+        """
+        if isinstance(mfa_level, bool) or not isinstance(mfa_level, int):
+            raise TypeError(f"`mfa_level` must be of type int, got {type(mfa_level).__name__}")
+        if self.owner_id != self._state.self_id:
+            raise ValueError("To edit the 2FA level, you must be the owner of the guild.")
+        # return value unused
+        await self._state.http.edit_mfa_level(self.id, mfa_level, reason=reason)
 
     async def chunk(self, *, cache: bool = True) -> Optional[List[Member]]:
         """|coro|

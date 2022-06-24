@@ -1,8 +1,10 @@
+# pyright: reportUnknownLambdaType=false
+
 import asyncio
 import os
 
 import disnake
-import youtube_dl
+import youtube_dl  # type: ignore
 from disnake.ext import commands
 
 try:
