@@ -27,10 +27,12 @@ from __future__ import annotations
 
 import asyncio
 import os
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Callable,
     Dict,
+    Generic,
     List,
     Optional,
     Tuple,
@@ -40,15 +42,16 @@ from typing import (
     overload,
 )
 
-from ..components import SelectOption, StringSelectMenu
+from ..components import AnySelectMenu, SelectOption, StringSelectMenu
 from ..enums import ComponentType
 from ..partial_emoji import PartialEmoji
 from ..utils import MISSING
 from .item import DecoratedItem, Item
 
 __all__ = (
-    "Select",
-    "select",
+    "BaseSelect",
+    "StringSelect",
+    "string_select",
 )
 
 if TYPE_CHECKING:
@@ -57,8 +60,10 @@ if TYPE_CHECKING:
     from .item import ItemCallbackType
     from .view import View
 
-S = TypeVar("S", bound="Select")
+S = TypeVar("S", bound="BaseSelect")
 V = TypeVar("V", bound="Optional[View]", covariant=True)
+SelectMenuT = TypeVar("SelectMenuT", bound=AnySelectMenu)
+SelectValueT = TypeVar("SelectValueT")
 
 
 def _parse_select_options(
@@ -71,45 +76,18 @@ def _parse_select_options(
     return [opt if isinstance(opt, SelectOption) else SelectOption(label=opt) for opt in options]
 
 
-class Select(Item[V]):
-    """Represents a UI select menu.
+class BaseSelect(Generic[SelectMenuT, SelectValueT, V], Item[V], ABC):
+    """Represents an abstract UI select menu.
 
     This is usually represented as a drop down menu.
 
-    In order to get the selected items that the user has chosen, use :attr:`Select.values`.
+    In order to get the selected items that the user has chosen, use :attr:`.values`.
 
-    .. versionadded:: 2.0
+    This isn't meant to be used directly, instead use one of the concrete select menu types:
 
-    Parameters
-    ----------
-    custom_id: :class:`str`
-        The ID of the select menu that gets received during an interaction.
-        If not given then one is generated for you.
-    placeholder: Optional[:class:`str`]
-        The placeholder text that is shown if nothing is selected, if any.
-    min_values: :class:`int`
-        The minimum number of items that must be chosen for this select menu.
-        Defaults to 1 and must be between 1 and 25.
-    max_values: :class:`int`
-        The maximum number of items that must be chosen for this select menu.
-        Defaults to 1 and must be between 1 and 25.
-    options: Union[List[:class:`disnake.SelectOption`], List[:class:`str`], Dict[:class:`str`, :class:`str`]]
-        A list of options that can be selected in this menu. Use explicit :class:`.SelectOption`\\s
-        for fine-grained control over the options. Alternatively, a list of strings will be treated
-        as a list of labels, and a dict will be treated as a mapping of labels to values.
+    - :class:`disnake.ui.StringSelect`
 
-        .. versionchanged:: 2.5
-            Now also accepts a list of str or a dict of str to str, which are then appropriately parsed as
-            :class:`.SelectOption` labels and values.
-
-    disabled: :class:`bool`
-        Whether the select is disabled.
-    row: Optional[:class:`int`]
-        The relative row this select menu belongs to. A Discord component can only have 5
-        rows. By default, items are arranged automatically into those 5 rows. If you'd
-        like to control the relative positioning of the row then passing an index is advised.
-        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
-        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+    .. versionadded:: 2.6
     """
 
     __repr_attributes__: Tuple[str, ...] = (
@@ -120,59 +98,30 @@ class Select(Item[V]):
         "disabled",
     )
     # We have to set this to MISSING in order to overwrite the abstract property from WrappedComponent
-    _underlying: StringSelectMenu = MISSING
-
-    @overload
-    def __init__(
-        self: Select[None],
-        *,
-        custom_id: str = MISSING,
-        placeholder: Optional[str] = None,
-        min_values: int = 1,
-        max_values: int = 1,
-        options: Union[List[SelectOption], List[str], Dict[str, str]] = MISSING,
-        disabled: bool = False,
-        row: Optional[int] = None,
-    ):
-        ...
-
-    @overload
-    def __init__(
-        self: Select[V],
-        *,
-        custom_id: str = MISSING,
-        placeholder: Optional[str] = None,
-        min_values: int = 1,
-        max_values: int = 1,
-        options: Union[List[SelectOption], List[str], Dict[str, str]] = MISSING,
-        disabled: bool = False,
-        row: Optional[int] = None,
-    ):
-        ...
+    _underlying: SelectMenuT = MISSING
 
     def __init__(
         self,
+        underlying_type: Type[SelectMenuT],
+        component_type: ComponentType,
         *,
-        custom_id: str = MISSING,
-        placeholder: Optional[str] = None,
-        min_values: int = 1,
-        max_values: int = 1,
-        options: Union[List[SelectOption], List[str], Dict[str, str]] = MISSING,
-        disabled: bool = False,
-        row: Optional[int] = None,
+        custom_id: str,
+        placeholder: Optional[str],
+        min_values: int,
+        max_values: int,
+        disabled: bool,
+        row: Optional[int],
     ) -> None:
         super().__init__()
-        self._selected_values: List[str] = []
+        self._selected_values: List[SelectValueT] = []
         self._provided_custom_id = custom_id is not MISSING
         custom_id = os.urandom(16).hex() if custom_id is MISSING else custom_id
-        options = [] if options is MISSING else _parse_select_options(options)
-        self._underlying = StringSelectMenu._raw_construct(
+        self._underlying = underlying_type._raw_construct(
+            type=component_type,
             custom_id=custom_id,
-            type=ComponentType.string_select,
             placeholder=placeholder,
             min_values=min_values,
             max_values=max_values,
-            options=options,
             disabled=disabled,
         )
         self.row = row
@@ -218,6 +167,147 @@ class Select(Item[V]):
     @max_values.setter
     def max_values(self, value: int):
         self._underlying.max_values = int(value)
+
+    @property
+    def disabled(self) -> bool:
+        """:class:`bool`: Whether the select menu is disabled."""
+        return self._underlying.disabled
+
+    @disabled.setter
+    def disabled(self, value: bool):
+        self._underlying.disabled = bool(value)
+
+    @property
+    def values(self) -> List[SelectValueT]:
+        """List[:class:`Any`]: A list of values that have been selected by the user."""
+        # TODO: docstring
+        return self._selected_values
+
+    @property
+    def width(self) -> int:
+        return 5
+
+    def refresh_component(self, component: SelectMenuT) -> None:
+        self._underlying = component
+
+    def refresh_state(self, interaction: MessageInteraction) -> None:
+        # TODO: change typing of `interaction.values`
+        self._selected_values = interaction.values  # type: ignore
+
+    @classmethod
+    @abstractmethod
+    def from_component(cls: Type[S], component: SelectMenuT) -> S:
+        raise NotImplementedError
+
+    def is_dispatchable(self) -> bool:
+        """Whether the select menu is dispatchable. This will always return ``True``.
+
+        :return type: :class:`bool`
+        """
+        return True
+
+
+class StringSelect(BaseSelect[StringSelectMenu, str, V]):
+    """Represents a UI string select menu.
+
+    .. versionadded:: 2.0
+
+    Parameters
+    ----------
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        If not given then one is generated for you.
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    options: Union[List[:class:`disnake.SelectOption`], List[:class:`str`], Dict[:class:`str`, :class:`str`]]
+        A list of options that can be selected in this menu. Use explicit :class:`.SelectOption`\\s
+        for fine-grained control over the options. Alternatively, a list of strings will be treated
+        as a list of labels, and a dict will be treated as a mapping of labels to values.
+
+        .. versionchanged:: 2.5
+            Now also accepts a list of str or a dict of str to str, which are then appropriately parsed as
+            :class:`.SelectOption` labels and values.
+
+    disabled: :class:`bool`
+        Whether the select is disabled.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+    """
+
+    __repr_attributes__: Tuple[str, ...] = BaseSelect.__repr_attributes__ + ("options",)
+
+    @overload
+    def __init__(
+        self: StringSelect[None],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        options: Union[List[SelectOption], List[str], Dict[str, str]] = MISSING,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: StringSelect[V],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        options: Union[List[SelectOption], List[str], Dict[str, str]] = MISSING,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    def __init__(
+        self,
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        options: Union[List[SelectOption], List[str], Dict[str, str]] = MISSING,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ) -> None:
+        super().__init__(
+            StringSelectMenu,
+            ComponentType.string_select,
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled,
+            row=row,
+        )
+        self._underlying.options = [] if options is MISSING else _parse_select_options(options)
+
+    @classmethod
+    def from_component(cls, component: StringSelectMenu) -> StringSelect:
+        return cls(
+            custom_id=component.custom_id,
+            placeholder=component.placeholder,
+            min_values=component.min_values,
+            max_values=component.max_values,
+            options=component.options,
+            disabled=component.disabled,
+            row=None,
+        )
 
     @property
     def options(self) -> List[SelectOption]:
@@ -297,51 +387,8 @@ class Select(Item[V]):
 
         self._underlying.options.append(option)
 
-    @property
-    def disabled(self) -> bool:
-        """:class:`bool`: Whether the select menu is disabled."""
-        return self._underlying.disabled
 
-    @disabled.setter
-    def disabled(self, value: bool):
-        self._underlying.disabled = bool(value)
-
-    @property
-    def values(self) -> List[str]:
-        """List[:class:`str`]: A list of values that have been selected by the user."""
-        return self._selected_values
-
-    @property
-    def width(self) -> int:
-        return 5
-
-    def refresh_component(self, component: StringSelectMenu) -> None:
-        self._underlying = component
-
-    def refresh_state(self, interaction: MessageInteraction) -> None:
-        self._selected_values = interaction.values  # type: ignore
-
-    @classmethod
-    def from_component(cls: Type[S], component: StringSelectMenu) -> S:
-        return cls(
-            custom_id=component.custom_id,
-            placeholder=component.placeholder,
-            min_values=component.min_values,
-            max_values=component.max_values,
-            options=component.options,
-            disabled=component.disabled,
-            row=None,
-        )
-
-    def is_dispatchable(self) -> bool:
-        """Whether the select menu is dispatchable. This will always return ``True``.
-
-        :return type: :class:`bool`
-        """
-        return True
-
-
-def select(
+def string_select(
     *,
     placeholder: Optional[str] = None,
     custom_id: str = MISSING,
@@ -350,15 +397,15 @@ def select(
     options: Union[List[SelectOption], List[str], Dict[str, str]] = MISSING,
     disabled: bool = False,
     row: Optional[int] = None,
-) -> Callable[[ItemCallbackType[Select]], DecoratedItem[Select]]:
-    """A decorator that attaches a select menu to a component.
+) -> Callable[[ItemCallbackType[StringSelect]], DecoratedItem[StringSelect]]:
+    """A decorator that attaches a string select menu to a component.
 
     The function being decorated should have three parameters, ``self`` representing
-    the :class:`disnake.ui.View`, the :class:`disnake.ui.Select` being pressed and
+    the :class:`disnake.ui.View`, the :class:`disnake.ui.StringSelect` being pressed and
     the :class:`disnake.MessageInteraction` you receive.
 
     In order to get the selected items that the user has chosen within the callback
-    use :attr:`Select.values`.
+    use :attr:`StringSelect.values`.
 
     Parameters
     ----------
@@ -392,11 +439,11 @@ def select(
         Whether the select is disabled. Defaults to ``False``.
     """
 
-    def decorator(func: ItemCallbackType[Select]) -> DecoratedItem[Select]:
+    def decorator(func: ItemCallbackType[StringSelect]) -> DecoratedItem[StringSelect]:
         if not asyncio.iscoroutinefunction(func):
             raise TypeError("select function must be a coroutine function")
 
-        func.__discord_ui_model_type__ = Select
+        func.__discord_ui_model_type__ = StringSelect
         func.__discord_ui_model_kwargs__ = {
             "placeholder": placeholder,
             "custom_id": custom_id,

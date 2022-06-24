@@ -51,7 +51,7 @@ from ..enums import ButtonStyle, ComponentType, TextInputStyle
 from ..utils import MISSING, SequenceProxy
 from .button import Button
 from .item import WrappedComponent
-from .select import Select
+from .select import StringSelect
 from .text_input import TextInput
 
 if TYPE_CHECKING:
@@ -70,8 +70,8 @@ __all__ = (
 )
 
 
-MessageUIComponent = Union[Button[Any], Select[Any]]
-ModalUIComponent = TextInput  # Union[TextInput, Select[Any]]
+MessageUIComponent = Union[Button[Any], StringSelect[Any]]
+ModalUIComponent = TextInput  # Union[TextInput, StringSelect[Any]]
 UIComponentT = TypeVar("UIComponentT", bound=WrappedComponent)
 StrictUIComponentT = TypeVar("StrictUIComponentT", MessageUIComponent, ModalUIComponent)
 
@@ -121,8 +121,8 @@ class ActionRow(Generic[UIComponentT]):
         ...
 
     # Explicit definitions are needed to make
-    # "ActionRow(Select(), TextInput())" and
-    # "ActionRow(Select(), Button())"
+    # "ActionRow(StringSelect(), TextInput())" and
+    # "ActionRow(StringSelect(), Button())"
     # differentiate themselves properly.
 
     @overload
@@ -266,7 +266,7 @@ class ActionRow(Generic[UIComponentT]):
             ),
         )
 
-    def add_select(
+    def add_string_select(
         self: Union[
             ActionRow[MessageUIComponent],
             # ActionRow[ModalUIComponent],
@@ -283,7 +283,7 @@ class ActionRow(Generic[UIComponentT]):
         """Add a select menu to the action row. Can only be used if the action
         row holds message components.
 
-        To append a pre-existing :class:`~disnake.ui.Select` use the
+        To append a pre-existing :class:`~disnake.ui.StringSelect` use the
         :meth:`append_item` method instead.
 
         Parameters
@@ -310,7 +310,7 @@ class ActionRow(Generic[UIComponentT]):
             The width of the action row exceeds 5.
         """
         self.append_item(
-            Select(
+            StringSelect(
                 custom_id=custom_id,
                 placeholder=placeholder,
                 min_values=min_values,
@@ -504,7 +504,7 @@ class ActionRow(Generic[UIComponentT]):
                 if isinstance(component, ButtonComponent):
                     current_row.append_item(Button.from_component(component))
                 elif isinstance(component, StringSelectComponent):
-                    current_row.append_item(Select.from_component(component))
+                    current_row.append_item(StringSelect.from_component(component))
                 elif strict:
                     raise TypeError(f"Encountered unknown component type: {component.type!r}.")
 

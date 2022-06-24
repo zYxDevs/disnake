@@ -80,9 +80,9 @@ def _component_to_item(component: NestedComponent) -> Item:
 
         return Button.from_component(component)
     if isinstance(component, StringSelectComponent):
-        from .select import Select
+        from .select import StringSelect
 
-        return Select.from_component(component)
+        return StringSelect.from_component(component)
     return Item.from_component(component)
 
 
