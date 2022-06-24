@@ -55,12 +55,13 @@ __all__ = (
 )
 
 if TYPE_CHECKING:
+    from typing_extensions import Self
+
     from ..emoji import Emoji
     from ..interactions import MessageInteraction
     from .item import ItemCallbackType
     from .view import View
 
-S = TypeVar("S", bound="BaseSelect")
 V = TypeVar("V", bound="Optional[View]", covariant=True)
 SelectMenuT = TypeVar("SelectMenuT", bound=AnySelectMenu)
 SelectValueT = TypeVar("SelectValueT")
@@ -196,7 +197,7 @@ class BaseSelect(Generic[SelectMenuT, SelectValueT, V], Item[V], ABC):
 
     @classmethod
     @abstractmethod
-    def from_component(cls: Type[S], component: SelectMenuT) -> S:
+    def from_component(cls, component: SelectMenuT) -> Self:
         raise NotImplementedError
 
     def is_dispatchable(self) -> bool:
@@ -298,7 +299,7 @@ class StringSelect(BaseSelect[StringSelectMenu, str, V]):
         self._underlying.options = [] if options is MISSING else _parse_select_options(options)
 
     @classmethod
-    def from_component(cls, component: StringSelectMenu) -> StringSelect:
+    def from_component(cls, component: StringSelectMenu) -> Self:
         return cls(
             custom_id=component.custom_id,
             placeholder=component.placeholder,
