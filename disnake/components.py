@@ -166,7 +166,7 @@ class Button(Component):
 
     .. note::
 
-        The user constructible and usable type to create a button is :class:`disnake.ui.Button`
+        The user constructible and usable type to create a button is :class:`disnake.ui.Button`,
         not this one.
 
     .. versionadded:: 2.0
