@@ -2,13 +2,6 @@ import os
 
 import disnake
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
-
 
 class MyClient(disnake.Client):
     async def on_ready(self):

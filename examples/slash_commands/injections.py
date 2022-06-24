@@ -8,13 +8,6 @@ import disnake
 import pytz
 from disnake.ext import commands
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
-
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
 # Instead of repeating boiler-plate code you may use injections

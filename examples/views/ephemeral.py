@@ -3,13 +3,6 @@ import os
 import disnake
 from disnake.ext import commands
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
-
 
 class EphemeralCounterBot(commands.Bot):
     def __init__(self):

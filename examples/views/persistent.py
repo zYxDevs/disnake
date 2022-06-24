@@ -3,12 +3,6 @@ import os
 import disnake
 from disnake.ext import commands
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
 
 # Define a simple View that persists between bot restarts
 # In order a view to persist between restarts it needs to meet the following conditions:

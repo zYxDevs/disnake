@@ -4,13 +4,6 @@ import os
 
 import disnake
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
-
 
 class MyClient(disnake.Client):
     def __init__(self, *args, **kwargs):

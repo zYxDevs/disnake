@@ -3,13 +3,6 @@ import os
 import disnake
 from disnake.ext import commands
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
-
 description = """This is a script wherein the user can input
                  a UserID as well as message content, and the
                  bot will create a webhook to "impersonate"

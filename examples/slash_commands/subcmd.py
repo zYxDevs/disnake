@@ -2,13 +2,6 @@ import os
 
 from disnake.ext import commands
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
-
 bot = commands.Bot(command_prefix=commands.when_mentioned)
 
 # Slash command subcommands differ from classic text subcommands & groups

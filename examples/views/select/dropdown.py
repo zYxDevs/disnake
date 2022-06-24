@@ -3,12 +3,6 @@ import os
 import disnake
 from disnake.ext import commands
 
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    pass
-else:
-    load_dotenv()
 
 # Defines a custom Select containing colour options
 # that the user can choose. The callback function
