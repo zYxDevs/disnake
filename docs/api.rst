@@ -5455,6 +5455,50 @@ StringSelect
 
 .. autofunction:: disnake.ui.string_select
 
+UserSelect
+~~~~~~~~~~
+
+.. attributetable:: disnake.ui.UserSelect
+
+.. autoclass:: disnake.ui.UserSelect
+    :members:
+    :inherited-members:
+
+.. autofunction:: disnake.ui.user_select
+
+RoleSelect
+~~~~~~~~~~
+
+.. attributetable:: disnake.ui.RoleSelect
+
+.. autoclass:: disnake.ui.RoleSelect
+    :members:
+    :inherited-members:
+
+.. autofunction:: disnake.ui.role_select
+
+MentionableSelect
+~~~~~~~~~~~~~~~~~
+
+.. attributetable:: disnake.ui.MentionableSelect
+
+.. autoclass:: disnake.ui.MentionableSelect
+    :members:
+    :inherited-members:
+
+.. autofunction:: disnake.ui.mentionable_select
+
+ChannelSelect
+~~~~~~~~~~~~~
+
+.. attributetable:: disnake.ui.ChannelSelect
+
+.. autoclass:: disnake.ui.ChannelSelect
+    :members:
+    :inherited-members:
+
+.. autofunction:: disnake.ui.channel_select
+
 Modal
 ~~~~~
 

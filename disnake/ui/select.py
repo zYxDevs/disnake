@@ -42,8 +42,16 @@ from typing import (
     overload,
 )
 
-from ..components import AnySelectMenu, SelectOption, StringSelectMenu
-from ..enums import ComponentType
+from ..components import (
+    AnySelectMenu,
+    ChannelSelectMenu,
+    MentionableSelectMenu,
+    RoleSelectMenu,
+    SelectOption,
+    StringSelectMenu,
+    UserSelectMenu,
+)
+from ..enums import ChannelType, ComponentType
 from ..partial_emoji import PartialEmoji
 from ..utils import MISSING
 from .item import DecoratedItem, Item
@@ -52,21 +60,36 @@ __all__ = (
     "BaseSelect",
     "StringSelect",
     "Select",
+    "UserSelect",
+    "RoleSelect",
+    "MentionableSelect",
+    "ChannelSelect",
     "string_select",
     "select",
+    "user_select",
+    "role_select",
+    "mentionable_select",
+    "channel_select",
 )
 
 if TYPE_CHECKING:
     from typing_extensions import Self
 
+    from ..abc import GuildChannel
     from ..emoji import Emoji
     from ..interactions import MessageInteraction
+    from ..member import Member
+    from ..role import Role
     from .item import ItemCallbackType
     from .view import View
 
 V = TypeVar("V", bound="Optional[View]", covariant=True)
 SelectMenuT = TypeVar("SelectMenuT", bound=AnySelectMenu)
 SelectValueT = TypeVar("SelectValueT")
+
+AnySelect = Union[
+    "StringSelect[V]", "UserSelect[V]", "RoleSelect[V]", "MentionableSelect[V]", "ChannelSelect[V]"
+]
 
 
 def _parse_select_options(
@@ -87,6 +110,10 @@ class BaseSelect(Generic[SelectMenuT, SelectValueT, V], Item[V], ABC):
     This isn't meant to be used directly, instead use one of the concrete select menu types:
 
     - :class:`disnake.ui.StringSelect`
+    - :class:`disnake.ui.UserSelect`
+    - :class:`disnake.ui.RoleSelect`
+    - :class:`disnake.ui.MentionableSelect`
+    - :class:`disnake.ui.ChannelSelect`
 
     .. versionadded:: 2.6
     """
@@ -397,6 +424,391 @@ class StringSelect(BaseSelect[StringSelectMenu, str, V]):
 Select = StringSelect  # backwards compatibility
 
 
+class UserSelect(BaseSelect[UserSelectMenu, "Member", V]):
+    """Represents a UI user select menu.
+
+    In order to get the items that the user has selected, use :attr:`values`.
+
+    .. versionadded:: 2.6
+
+    Parameters
+    ----------
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        If not given then one is generated for you.
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+
+    Attributes
+    ----------
+    values: List[:class:`.Member`]
+        A list of users that have been selected by the user.
+    """
+
+    @overload
+    def __init__(
+        self: UserSelect[None],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: UserSelect[V],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    def __init__(
+        self,
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ) -> None:
+        super().__init__(
+            UserSelectMenu,
+            ComponentType.user_select,
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled,
+            row=row,
+        )
+
+    @classmethod
+    def from_component(cls, component: UserSelectMenu) -> Self:
+        return cls(
+            custom_id=component.custom_id,
+            placeholder=component.placeholder,
+            min_values=component.min_values,
+            max_values=component.max_values,
+            disabled=component.disabled,
+            row=None,
+        )
+
+
+class RoleSelect(BaseSelect[RoleSelectMenu, "Role", V]):
+    """Represents a UI role select menu.
+
+    In order to get the items that the user has selected, use :attr:`values`.
+
+    .. versionadded:: 2.6
+
+    Parameters
+    ----------
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        If not given then one is generated for you.
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+
+    Attributes
+    ----------
+    values: List[:class:`.Role`]
+        A list of roles that have been selected by the user.
+    """
+
+    @overload
+    def __init__(
+        self: RoleSelect[None],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: RoleSelect[V],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    def __init__(
+        self,
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ) -> None:
+        super().__init__(
+            RoleSelectMenu,
+            ComponentType.role_select,
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled,
+            row=row,
+        )
+
+    @classmethod
+    def from_component(cls, component: RoleSelectMenu) -> Self:
+        return cls(
+            custom_id=component.custom_id,
+            placeholder=component.placeholder,
+            min_values=component.min_values,
+            max_values=component.max_values,
+            disabled=component.disabled,
+            row=None,
+        )
+
+
+class MentionableSelect(BaseSelect[MentionableSelectMenu, "Union[Member, Role]", V]):
+    """Represents a UI mentionable (user/role) select menu.
+
+    In order to get the items that the user has selected, use :attr:`values`.
+
+    .. versionadded:: 2.6
+
+    Parameters
+    ----------
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        If not given then one is generated for you.
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+
+    Attributes
+    ----------
+    values: List[Union[:class:`.Member`, :class:`.Role`]]
+        A list of users and/or roles that have been selected by the user.
+    """
+
+    @overload
+    def __init__(
+        self: MentionableSelect[None],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: MentionableSelect[V],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ):
+        ...
+
+    def __init__(
+        self,
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+    ) -> None:
+        super().__init__(
+            MentionableSelectMenu,
+            ComponentType.mentionable_select,
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled,
+            row=row,
+        )
+
+    @classmethod
+    def from_component(cls, component: MentionableSelectMenu) -> Self:
+        return cls(
+            custom_id=component.custom_id,
+            placeholder=component.placeholder,
+            min_values=component.min_values,
+            max_values=component.max_values,
+            disabled=component.disabled,
+            row=None,
+        )
+
+
+# TODO: threads?
+class ChannelSelect(BaseSelect[ChannelSelectMenu, "GuildChannel", V]):
+    """Represents a UI channel select menu.
+
+    In order to get the items that the user has selected, use :attr:`values`.
+
+    .. versionadded:: 2.6
+
+    Parameters
+    ----------
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        If not given then one is generated for you.
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+    channel_types: Optional[List[:class:`.ChannelType`]]
+        The list of channel types that can be selected in this select menu.
+        Defaults to all types.
+
+    Attributes
+    ----------
+    values: List[:class:`.GuildChannel`]
+        A list of channels that have been selected by the user.
+    """
+
+    @overload
+    def __init__(
+        self: ChannelSelect[None],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+        channel_types: Optional[List[ChannelType]] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: ChannelSelect[V],
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+        channel_types: Optional[List[ChannelType]] = None,
+    ):
+        ...
+
+    def __init__(
+        self,
+        *,
+        custom_id: str = MISSING,
+        placeholder: Optional[str] = None,
+        min_values: int = 1,
+        max_values: int = 1,
+        disabled: bool = False,
+        row: Optional[int] = None,
+        channel_types: Optional[List[ChannelType]] = None,
+    ) -> None:
+        super().__init__(
+            ChannelSelectMenu,
+            ComponentType.channel_select,
+            custom_id=custom_id,
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            disabled=disabled,
+            row=row,
+        )
+        self._underlying.channel_types = channel_types or []
+
+    @classmethod
+    def from_component(cls, component: ChannelSelectMenu) -> Self:
+        return cls(
+            custom_id=component.custom_id,
+            placeholder=component.placeholder,
+            min_values=component.min_values,
+            max_values=component.max_values,
+            disabled=component.disabled,
+            row=None,
+            channel_types=component.channel_types,
+        )
+
+
 def string_select(
     *,
     placeholder: Optional[str] = None,
@@ -468,3 +880,244 @@ def string_select(
 
 
 select = string_select  # backwards compatibility
+
+
+def user_select(
+    *,
+    placeholder: Optional[str] = None,
+    custom_id: str = MISSING,
+    min_values: int = 1,
+    max_values: int = 1,
+    disabled: bool = False,
+    row: Optional[int] = None,
+) -> Callable[[ItemCallbackType[UserSelect]], DecoratedItem[UserSelect]]:
+    """A decorator that attaches a user select menu to a component.
+
+    The function being decorated should have three parameters, ``self`` representing
+    the :class:`disnake.ui.View`, the :class:`disnake.ui.UserSelect` that was
+    interacted with, and the :class:`disnake.MessageInteraction`.
+
+    In order to get the selected items that the user has chosen within the callback
+    use :attr:`UserSelect.values`.
+
+    Parameters
+    ----------
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        It is recommended not to set this parameter to prevent conflicts.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled. Defaults to ``False``.
+    """
+
+    def decorator(func: ItemCallbackType[UserSelect]) -> DecoratedItem[UserSelect]:
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError("select function must be a coroutine function")
+
+        func.__discord_ui_model_type__ = UserSelect
+        func.__discord_ui_model_kwargs__ = {
+            "placeholder": placeholder,
+            "custom_id": custom_id,
+            "row": row,
+            "min_values": min_values,
+            "max_values": max_values,
+            "disabled": disabled,
+        }
+        return func  # type: ignore
+
+    return decorator
+
+
+def role_select(
+    *,
+    placeholder: Optional[str] = None,
+    custom_id: str = MISSING,
+    min_values: int = 1,
+    max_values: int = 1,
+    disabled: bool = False,
+    row: Optional[int] = None,
+) -> Callable[[ItemCallbackType[RoleSelect]], DecoratedItem[RoleSelect]]:
+    """A decorator that attaches a role select menu to a component.
+
+    The function being decorated should have three parameters, ``self`` representing
+    the :class:`disnake.ui.View`, the :class:`disnake.ui.RoleSelect` that was
+    interacted with, and the :class:`disnake.MessageInteraction`.
+
+    In order to get the selected items that the user has chosen within the callback
+    use :attr:`RoleSelect.values`.
+
+    Parameters
+    ----------
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        It is recommended not to set this parameter to prevent conflicts.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled. Defaults to ``False``.
+    """
+
+    def decorator(func: ItemCallbackType[RoleSelect]) -> DecoratedItem[RoleSelect]:
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError("select function must be a coroutine function")
+
+        func.__discord_ui_model_type__ = RoleSelect
+        func.__discord_ui_model_kwargs__ = {
+            "placeholder": placeholder,
+            "custom_id": custom_id,
+            "row": row,
+            "min_values": min_values,
+            "max_values": max_values,
+            "disabled": disabled,
+        }
+        return func  # type: ignore
+
+    return decorator
+
+
+def mentionable_select(
+    *,
+    placeholder: Optional[str] = None,
+    custom_id: str = MISSING,
+    min_values: int = 1,
+    max_values: int = 1,
+    disabled: bool = False,
+    row: Optional[int] = None,
+) -> Callable[[ItemCallbackType[MentionableSelect]], DecoratedItem[MentionableSelect]]:
+    """A decorator that attaches a mentionable (user/role) select menu to a component.
+
+    The function being decorated should have three parameters, ``self`` representing
+    the :class:`disnake.ui.View`, the :class:`disnake.ui.MentionableSelect` that was
+    interacted with, and the :class:`disnake.MessageInteraction`.
+
+    In order to get the selected items that the user has chosen within the callback
+    use :attr:`MentionableSelect.values`.
+
+    Parameters
+    ----------
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        It is recommended not to set this parameter to prevent conflicts.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled. Defaults to ``False``.
+    """
+
+    def decorator(func: ItemCallbackType[MentionableSelect]) -> DecoratedItem[MentionableSelect]:
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError("select function must be a coroutine function")
+
+        func.__discord_ui_model_type__ = MentionableSelect
+        func.__discord_ui_model_kwargs__ = {
+            "placeholder": placeholder,
+            "custom_id": custom_id,
+            "row": row,
+            "min_values": min_values,
+            "max_values": max_values,
+            "disabled": disabled,
+        }
+        return func  # type: ignore
+
+    return decorator
+
+
+def channel_select(
+    *,
+    placeholder: Optional[str] = None,
+    custom_id: str = MISSING,
+    min_values: int = 1,
+    max_values: int = 1,
+    disabled: bool = False,
+    row: Optional[int] = None,
+    channel_types: Optional[List[ChannelType]] = None,
+) -> Callable[[ItemCallbackType[ChannelSelect]], DecoratedItem[ChannelSelect]]:
+    """A decorator that attaches a channel select menu to a component.
+
+    The function being decorated should have three parameters, ``self`` representing
+    the :class:`disnake.ui.View`, the :class:`disnake.ui.ChannelSelect` that was
+    interacted with, and the :class:`disnake.MessageInteraction`.
+
+    In order to get the selected items that the user has chosen within the callback
+    use :attr:`ChannelSelect.values`.
+
+    Parameters
+    ----------
+    placeholder: Optional[:class:`str`]
+        The placeholder text that is shown if nothing is selected, if any.
+    custom_id: :class:`str`
+        The ID of the select menu that gets received during an interaction.
+        It is recommended not to set this parameter to prevent conflicts.
+    row: Optional[:class:`int`]
+        The relative row this select menu belongs to. A Discord component can only have 5
+        rows. By default, items are arranged automatically into those 5 rows. If you'd
+        like to control the relative positioning of the row then passing an index is advised.
+        For example, row=1 will show up before row=2. Defaults to ``None``, which is automatic
+        ordering. The row number must be between 0 and 4 (i.e. zero indexed).
+    min_values: :class:`int`
+        The minimum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    max_values: :class:`int`
+        The maximum number of items that must be chosen for this select menu.
+        Defaults to 1 and must be between 1 and 25.
+    disabled: :class:`bool`
+        Whether the select is disabled. Defaults to ``False``.
+    channel_types: Optional[List[:class:`.ChannelType`]]
+        The list of channel types that can be selected in this select menu.
+        Defaults to all types.
+    """
+
+    def decorator(func: ItemCallbackType[ChannelSelect]) -> DecoratedItem[ChannelSelect]:
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError("select function must be a coroutine function")
+
+        func.__discord_ui_model_type__ = ChannelSelect
+        func.__discord_ui_model_kwargs__ = {
+            "placeholder": placeholder,
+            "custom_id": custom_id,
+            "row": row,
+            "min_values": min_values,
+            "max_values": max_values,
+            "disabled": disabled,
+            "channel_types": channel_types,
+        }
+        return func  # type: ignore
+
+    return decorator

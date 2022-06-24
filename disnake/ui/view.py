@@ -48,9 +48,12 @@ from typing import (
 from ..components import (
     ActionRow as ActionRowComponent,
     Button as ButtonComponent,
+    ChannelSelectMenu as ChannelSelectComponent,
+    MentionableSelectMenu as MentionableSelectComponent,
     MessageComponent,
-    NestedComponent,
+    RoleSelectMenu as RoleSelectComponent,
     StringSelectMenu as StringSelectComponent,
+    UserSelectMenu as UserSelectComponent,
     _component_factory,
 )
 from ..enums import ComponentType, try_enum_to_int
@@ -60,6 +63,8 @@ __all__ = ("View",)
 
 
 if TYPE_CHECKING:
+    from typing_extensions import Never, assert_type
+
     from ..interactions import MessageInteraction
     from ..message import Message
     from ..state import ConnectionState
@@ -69,12 +74,12 @@ if TYPE_CHECKING:
 
 def _walk_all_components(
     components: List[ActionRowComponent[MessageComponent]],
-) -> Iterator[NestedComponent]:
+) -> Iterator[MessageComponent]:
     for item in components:
         yield from item.children
 
 
-def _component_to_item(component: NestedComponent) -> Item:
+def _component_to_item(component: MessageComponent) -> Item:
     if isinstance(component, ButtonComponent):
         from .button import Button
 
@@ -83,6 +88,25 @@ def _component_to_item(component: NestedComponent) -> Item:
         from .select import StringSelect
 
         return StringSelect.from_component(component)
+    if isinstance(component, UserSelectComponent):
+        from .select import UserSelect
+
+        return UserSelect.from_component(component)
+    if isinstance(component, RoleSelectComponent):
+        from .select import RoleSelect
+
+        return RoleSelect.from_component(component)
+    if isinstance(component, MentionableSelectComponent):
+        from .select import MentionableSelect
+
+        return MentionableSelect.from_component(component)
+    if isinstance(component, ChannelSelectComponent):
+        from .select import ChannelSelect
+
+        return ChannelSelect.from_component(component)
+
+    if TYPE_CHECKING:
+        assert_type(component, Never)
     return Item.from_component(component)
 
 

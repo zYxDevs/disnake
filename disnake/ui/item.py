@@ -61,7 +61,7 @@ class WrappedComponent(ABC):
     The following classes implement this ABC:
 
     - :class:`disnake.ui.Button`
-    - subtypes of :class:`disnake.ui.BaseSelect` (:class:`~disnake.ui.StringSelect`, ...)
+    - subtypes of :class:`disnake.ui.BaseSelect` (:class:`~disnake.ui.StringSelect`, :class:`~disnake.ui.UserSelect`, :class:`~disnake.ui.RoleSelect`, :class:`~disnake.ui.MentionableSelect`, :class:`~disnake.ui.ChannelSelect`)
     - :class:`disnake.ui.TextInput`
 
     .. versionadded:: 2.4
@@ -100,7 +100,7 @@ class Item(WrappedComponent, Generic[V]):
     The current UI items supported are:
 
     - :class:`disnake.ui.Button`
-    - subtypes of :class:`disnake.ui.BaseSelect` (:class:`~disnake.ui.StringSelect`, ...)
+    - subtypes of :class:`disnake.ui.BaseSelect` (:class:`~disnake.ui.StringSelect`, :class:`~disnake.ui.UserSelect`, :class:`~disnake.ui.RoleSelect`, :class:`~disnake.ui.MentionableSelect`, :class:`~disnake.ui.ChannelSelect`)
 
     .. versionadded:: 2.0
     """
