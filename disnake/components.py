@@ -292,7 +292,7 @@ class BaseSelectMenu(Component):
     __repr_info__: ClassVar[Tuple[str, ...]] = __slots__
 
     def __init__(self, data: BaseSelectMenuPayload):
-        self.type = ComponentType.string_select
+        self.type: ComponentType = try_enum(ComponentType, data["type"])
         self.custom_id: str = data["custom_id"]
         self.placeholder: Optional[str] = data.get("placeholder")
         self.min_values: int = data.get("min_values", 1)
