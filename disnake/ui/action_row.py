@@ -83,8 +83,8 @@ __all__ = (
 )
 
 
-MessageUIComponent = Union[Button[Any], AnySelect[Any]]
-ModalUIComponent = TextInput  # Union[TextInput, AnySelect[Any]]
+MessageUIComponent = Union[Button[Any], "AnySelect[Any]"]
+ModalUIComponent = TextInput  # Union[TextInput, "AnySelect[Any]"]
 UIComponentT = TypeVar("UIComponentT", bound=WrappedComponent)
 StrictUIComponentT = TypeVar("StrictUIComponentT", MessageUIComponent, ModalUIComponent)
 
