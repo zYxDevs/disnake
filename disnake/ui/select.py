@@ -51,7 +51,9 @@ from .item import DecoratedItem, Item
 __all__ = (
     "BaseSelect",
     "StringSelect",
+    "Select",
     "string_select",
+    "select",
 )
 
 if TYPE_CHECKING:
@@ -392,6 +394,9 @@ class StringSelect(BaseSelect[StringSelectMenu, str, V]):
         self._underlying.options.append(option)
 
 
+Select = StringSelect  # backwards compatibility
+
+
 def string_select(
     *,
     placeholder: Optional[str] = None,
@@ -460,3 +465,6 @@ def string_select(
         return func  # type: ignore
 
     return decorator
+
+
+select = string_select  # backwards compatibility

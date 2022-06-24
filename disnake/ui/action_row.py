@@ -320,6 +320,8 @@ class ActionRow(Generic[UIComponentT]):
             ),
         )
 
+    add_select = add_string_select  # backwards compatibility
+
     def add_text_input(
         self: Union[ActionRow[ModalUIComponent], ActionRow[WrappedComponent]],
         *,

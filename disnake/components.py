@@ -65,6 +65,7 @@ __all__ = (
     "Button",
     "BaseSelectMenu",
     "StringSelectMenu",
+    "SelectMenu",
     "SelectOption",
     "TextInput",
 )
@@ -435,6 +436,9 @@ class SelectOption:
             payload["description"] = self.description
 
         return payload
+
+
+SelectMenu = StringSelectMenu  # backwards compatibility
 
 
 class TextInput(Component):
