@@ -28,7 +28,7 @@ async def send_button(ctx: commands.Context):
 async def send_select(ctx: commands.Context):
     await ctx.send(
         "Here's a select!",
-        components=disnake.ui.Select(options=["1", "2", "3"], custom_id="cool_select")
+        components=disnake.ui.StringSelect(options=["1", "2", "3"], custom_id="cool_select")
         # Note: specifying select options in a list/dict requires disnake version 2.5.0 or newer.
     )
 
