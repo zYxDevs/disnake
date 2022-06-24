@@ -1855,6 +1855,18 @@ of :class:`enum.Enum`.
     .. attribute:: text_input
 
         Represents a text input component.
+    .. attribute:: user_select
+
+        Represents a user select component.
+    .. attribute:: role_select
+
+        Represents a role select component.
+    .. attribute:: mentionable_select
+
+        Represents a mentionable (user/role) select component.
+    .. attribute:: channel_select
+
+        Represents a channel select component.
 
 .. class:: OptionType
 
@@ -4415,6 +4427,42 @@ StringSelectMenu
 .. attributetable:: StringSelectMenu
 
 .. autoclass:: StringSelectMenu()
+    :members:
+    :inherited-members:
+
+UserSelectMenu
+~~~~~~~~~~~~~~
+
+.. attributetable:: UserSelectMenu
+
+.. autoclass:: UserSelectMenu()
+    :members:
+    :inherited-members:
+
+RoleSelectMenu
+~~~~~~~~~~~~~~
+
+.. attributetable:: RoleSelectMenu
+
+.. autoclass:: RoleSelectMenu()
+    :members:
+    :inherited-members:
+
+MentionableSelectMenu
+~~~~~~~~~~~~~~~~~~~~~
+
+.. attributetable:: MentionableSelectMenu
+
+.. autoclass:: MentionableSelectMenu()
+    :members:
+    :inherited-members:
+
+ChannelSelectMenu
+~~~~~~~~~~~~~~~~~
+
+.. attributetable:: ChannelSelectMenu
+
+.. autoclass:: ChannelSelectMenu()
     :members:
     :inherited-members:
 
