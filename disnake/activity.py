@@ -305,7 +305,7 @@ class Activity(BaseActivity):
         except KeyError:
             return None
         else:
-            return Asset.BASE + f"/app-assets/{self.application_id}/{large_image}.png"
+            return f"{Asset.BASE}/app-assets/{self.application_id}/{large_image}.png"
 
     @property
     def small_image_url(self) -> Optional[str]:
@@ -318,7 +318,7 @@ class Activity(BaseActivity):
         except KeyError:
             return None
         else:
-            return Asset.BASE + f"/app-assets/{self.application_id}/{small_image}.png"
+            return f"{Asset.BASE}/app-assets/{self.application_id}/{small_image}.png"
 
     @property
     def large_image_text(self) -> Optional[str]:
@@ -687,7 +687,7 @@ class Spotify:
         if large_image[:8] != "spotify:":
             return ""
         album_image_id = large_image[8:]
-        return "https://i.scdn.co/image/" + album_image_id
+        return f"https://i.scdn.co/image/{album_image_id}"
 
     @property
     def track_id(self) -> str:
@@ -826,12 +826,11 @@ class CustomActivity(BaseActivity):
         return hash((self.name, str(self.emoji)))
 
     def __str__(self) -> str:
-        if self.emoji:
-            if self.name:
-                return f"{self.emoji} {self.name}"
-            return str(self.emoji)
-        else:
+        if not self.emoji:
             return str(self.name)
+        if self.name:
+            return f"{self.emoji} {self.name}"
+        return str(self.emoji)
 
     def __repr__(self) -> str:
         return f"<CustomActivity name={self.name!r} emoji={self.emoji!r}>"
@@ -860,7 +859,11 @@ def create_activity(
 
     activity: ActivityTypes
     game_type = try_enum(ActivityType, data.get("type", -1))
-    if game_type is ActivityType.playing and not ("application_id" in data or "session_id" in data):
+    if (
+        game_type is ActivityType.playing
+        and "application_id" not in data
+        and "session_id" not in data
+    ):
         activity = Game(**data)
     elif game_type is ActivityType.custom and "name" in data:
         activity = CustomActivity(**data)

@@ -106,15 +106,11 @@ def _transform_channel(
 def _transform_member_id(
     entry: AuditLogEntry, data: Optional[Snowflake]
 ) -> Union[Member, User, None]:
-    if data is None:
-        return None
-    return entry._get_member(int(data))
+    return None if data is None else entry._get_member(int(data))
 
 
 def _transform_guild_id(entry: AuditLogEntry, data: Optional[Snowflake]) -> Optional[Guild]:
-    if data is None:
-        return None
-    return entry._state._get_guild(int(data))
+    return None if data is None else entry._state._get_guild(int(data))
 
 
 def _transform_overwrites(
@@ -580,13 +576,18 @@ class AuditLogEntry(Hashable):
     def _get_integration_by_application_id(
         self, application_id: int
     ) -> Optional[PartialIntegration]:
-        if not application_id:
-            return None
-
-        for integration in self._integrations.values():
-            if integration.application_id == application_id:
-                return integration
-        return None
+        return (
+            next(
+                (
+                    integration
+                    for integration in self._integrations.values()
+                    if integration.application_id == application_id
+                ),
+                None,
+            )
+            if application_id
+            else None
+        )
 
     def __repr__(self) -> str:
         return f"<AuditLogEntry id={self.id} action={self.action} user={self.user!r}>"
@@ -621,7 +622,7 @@ class AuditLogEntry(Hashable):
             return Object(id=self._target_id) if self._target_id else None
 
         try:
-            converter = getattr(self, "_convert_target_" + self.action.target_type)
+            converter = getattr(self, f"_convert_target_{self.action.target_type}")
         except AttributeError:
             return Object(id=self._target_id) if self._target_id else None
         else:

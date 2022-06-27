@@ -36,7 +36,7 @@ REQUIREMENTS = {
 }
 for path in Path("requirements").iterdir():
     if match := re.fullmatch("requirements_(.+).txt", path.name):
-        REQUIREMENTS[match.group(1)] = str(path)
+        REQUIREMENTS[match[1]] = str(path)
 
 
 def depends(
@@ -202,11 +202,7 @@ def setup(session: nox.Session):
     """Set up the external environment."""
     session.log("Installing dependencies to the external environment.")
 
-    if session.posargs:
-        deps = list(session.posargs)
-    else:
-        deps = list(REQUIREMENTS.keys())
-
+    deps = list(session.posargs) if session.posargs else list(REQUIREMENTS.keys())
     if "." not in deps:
         deps.insert(0, ".")  # index doesn't really matter
 

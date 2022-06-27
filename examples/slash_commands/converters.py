@@ -54,8 +54,8 @@ class OtherCustomClass:
         self.discriminator = discriminator
 
     @commands.converter_method
-    async def convert(cls, inter: disnake.CommandInteraction, user: disnake.User):
-        return cls(user.name, user.discriminator)
+    async def convert(self, inter: disnake.CommandInteraction, user: disnake.User):
+        return self(user.name, user.discriminator)
 
 
 @bot.slash_command()

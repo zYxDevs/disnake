@@ -246,9 +246,7 @@ class Thread(Messageable, Hashable):
     @property
     def owner(self) -> Optional[Member]:
         """Optional[:class:`Member`]: The member this thread belongs to."""
-        if self.owner_id is None:
-            return None
-        return self.guild.get_member(self.owner_id)
+        return None if self.owner_id is None else self.guild.get_member(self.owner_id)
 
     @property
     def mention(self) -> str:
@@ -674,7 +672,7 @@ class Thread(Messageable, Hashable):
         """
         payload = {}
         if name is not MISSING:
-            payload["name"] = str(name)
+            payload["name"] = name
         if archived is not MISSING:
             payload["archived"] = archived
         if auto_archive_duration is not MISSING:

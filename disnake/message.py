@@ -160,11 +160,7 @@ async def _edit_handler(
 
     payload: Dict[str, Any] = {}
     if content is not MISSING:
-        if content is not None:
-            payload["content"] = str(content)
-        else:
-            payload["content"] = None
-
+        payload["content"] = str(content) if content is not None else None
     if file is not MISSING:
         files = [file]
 
@@ -185,25 +181,19 @@ async def _edit_handler(
     if allowed_mentions is MISSING:
         if previous_allowed_mentions:
             payload["allowed_mentions"] = previous_allowed_mentions.to_dict()
-    else:
-        if allowed_mentions:
-            if msg._state.allowed_mentions is not None:
-                payload["allowed_mentions"] = msg._state.allowed_mentions.merge(
-                    allowed_mentions
-                ).to_dict()
-            else:
-                payload["allowed_mentions"] = allowed_mentions.to_dict()
+    elif allowed_mentions:
+        payload["allowed_mentions"] = (
+            msg._state.allowed_mentions.merge(allowed_mentions).to_dict()
+            if msg._state.allowed_mentions is not None
+            else allowed_mentions.to_dict()
+        )
 
     if attachments is not MISSING:
         payload["attachments"] = [] if attachments is None else [a.to_dict() for a in attachments]
 
     if view is not MISSING:
         msg._state.prevent_view_updates_for(msg.id)
-        if view:
-            payload["components"] = view.to_components()
-        else:
-            payload["components"] = []
-
+        payload["components"] = view.to_components() if view else []
     if components is not MISSING:
         payload["components"] = [] if components is None else components_to_dict(components)
 
@@ -1322,28 +1312,32 @@ class Message(Hashable):
             return formats[created_at_ms % len(formats)].format(self.author.name)
 
         if self.type is MessageType.premium_guild_subscription:
-            if not self.content:
-                return f"{self.author.name} just boosted the server!"
-            else:
-                return f"{self.author.name} just boosted the server **{self.content}** times!"
+            return (
+                f"{self.author.name} just boosted the server **{self.content}** times!"
+                if self.content
+                else f"{self.author.name} just boosted the server!"
+            )
 
         if self.type is MessageType.premium_guild_tier_1:
-            if not self.content:
-                return f"{self.author.name} just boosted the server! {self.guild} has achieved **Level 1!**"
-            else:
-                return f"{self.author.name} just boosted the server **{self.content}** times! {self.guild} has achieved **Level 1!**"
+            return (
+                f"{self.author.name} just boosted the server **{self.content}** times! {self.guild} has achieved **Level 1!**"
+                if self.content
+                else f"{self.author.name} just boosted the server! {self.guild} has achieved **Level 1!**"
+            )
 
         if self.type is MessageType.premium_guild_tier_2:
-            if not self.content:
-                return f"{self.author.name} just boosted the server! {self.guild} has achieved **Level 2!**"
-            else:
-                return f"{self.author.name} just boosted the server **{self.content}** times! {self.guild} has achieved **Level 2!**"
+            return (
+                f"{self.author.name} just boosted the server **{self.content}** times! {self.guild} has achieved **Level 2!**"
+                if self.content
+                else f"{self.author.name} just boosted the server! {self.guild} has achieved **Level 2!**"
+            )
 
         if self.type is MessageType.premium_guild_tier_3:
-            if not self.content:
-                return f"{self.author.name} just boosted the server! {self.guild} has achieved **Level 3!**"
-            else:
-                return f"{self.author.name} just boosted the server **{self.content}** times! {self.guild} has achieved **Level 3!**"
+            return (
+                f"{self.author.name} just boosted the server **{self.content}** times! {self.guild} has achieved **Level 3!**"
+                if self.content
+                else f"{self.author.name} just boosted the server! {self.guild} has achieved **Level 3!**"
+            )
 
         if self.type is MessageType.channel_follow_add:
             return f"{self.author.name} has added {self.content} to this channel"
@@ -1926,10 +1920,12 @@ class Message(Hashable):
         :class:`.Message`
             The message that was sent.
         """
-        if not fail_if_not_exists:
-            reference = MessageReference.from_message(self, fail_if_not_exists=False)
-        else:
-            reference = self
+        reference = (
+            self
+            if fail_if_not_exists
+            else MessageReference.from_message(self, fail_if_not_exists=False)
+        )
+
         return await self.channel.send(content, reference=reference, **kwargs)
 
     def to_reference(self, *, fail_if_not_exists: bool = True) -> MessageReference:

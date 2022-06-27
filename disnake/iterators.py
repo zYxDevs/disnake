@@ -217,28 +217,29 @@ class ReactionIterator(_AsyncIterator[Union["User", "Member"]]):
             raise NoMoreItems()
 
     async def fill_users(self):
-        if self.limit > 0:
-            retrieve = min(self.limit, 100)
+        if self.limit <= 0:
+            return
+        retrieve = min(self.limit, 100)
 
-            after = self.after.id if self.after else None
-            data: List[PartialUserPayload] = await self.getter(
-                self.channel_id, self.message.id, self.emoji, retrieve, after=after
-            )
+        after = self.after.id if self.after else None
+        data: List[PartialUserPayload] = await self.getter(
+            self.channel_id, self.message.id, self.emoji, retrieve, after=after
+        )
 
-            if data:
-                self.limit -= retrieve
-                self.after = Object(id=int(data[-1]["id"]))
+        if data:
+            self.limit -= retrieve
+            self.after = Object(id=int(data[-1]["id"]))
 
-            for element in reversed(data):
-                if self.guild is None or isinstance(self.guild, Object):
-                    await self.users.put(self.state.create_user(data=element))
+        for element in reversed(data):
+            if self.guild is None or isinstance(self.guild, Object):
+                await self.users.put(self.state.create_user(data=element))
+            else:
+                member_id = int(element["id"])
+                member = self.guild.get_member(member_id)
+                if member is not None:
+                    await self.users.put(member)
                 else:
-                    member_id = int(element["id"])
-                    member = self.guild.get_member(member_id)
-                    if member is not None:
-                        await self.users.put(member)
-                    else:
-                        await self.users.put(self.state.create_user(data=element))
+                    await self.users.put(self.state.create_user(data=element))
 
 
 class HistoryIterator(_AsyncIterator["Message"]):
@@ -292,11 +293,7 @@ class HistoryIterator(_AsyncIterator["Message"]):
         if isinstance(around, datetime.datetime):
             around = Object(id=time_snowflake(around))
 
-        if oldest_first is None:
-            self.reverse = after is not None
-        else:
-            self.reverse = oldest_first
-
+        self.reverse = after is not None if oldest_first is None else oldest_first
         self.messageable = messageable
         self.limit = limit
         self.before = before
@@ -324,15 +321,14 @@ class HistoryIterator(_AsyncIterator["Message"]):
                 self._filter = lambda m: int(m["id"]) < self.before.id  # type: ignore
             elif self.after:
                 self._filter = lambda m: self.after.id < int(m["id"])
+        elif self.reverse:
+            self._retrieve_messages = self._retrieve_messages_after_strategy  # type: ignore
+            if self.before:
+                self._filter = lambda m: int(m["id"]) < self.before.id  # type: ignore
         else:
-            if self.reverse:
-                self._retrieve_messages = self._retrieve_messages_after_strategy  # type: ignore
-                if self.before:
-                    self._filter = lambda m: int(m["id"]) < self.before.id  # type: ignore
-            else:
-                self._retrieve_messages = self._retrieve_messages_before_strategy  # type: ignore
-                if self.after and self.after != OLDEST_OBJECT:
-                    self._filter = lambda m: int(m["id"]) > self.after.id
+            self._retrieve_messages = self._retrieve_messages_before_strategy  # type: ignore
+            if self.after and self.after != OLDEST_OBJECT:
+                self._filter = lambda m: int(m["id"]) > self.after.id
 
     async def next(self) -> Message:
         if self.messages.empty():
@@ -345,10 +341,7 @@ class HistoryIterator(_AsyncIterator["Message"]):
 
     def _get_retrieve(self):
         l = self.limit
-        if l is None or l > 100:
-            r = 100
-        else:
-            r = l
+        r = 100 if l is None or l > 100 else l
         self.retrieve = r
         return r > 0
 
@@ -551,8 +544,7 @@ class AuditLogIterator(_AsyncIterator["AuditLogEntry"]):
             before=before,
         )
 
-        entries = data.get("audit_log_entries", [])
-        if entries:
+        if entries := data.get("audit_log_entries", []):
             if self.limit is not None:
                 self.limit -= retrieve
             self.before = Object(id=int(entries[-1]["id"]))
@@ -569,70 +561,68 @@ class AuditLogIterator(_AsyncIterator["AuditLogEntry"]):
 
     def _get_retrieve(self):
         l = self.limit
-        if l is None or l > 100:
-            r = 100
-        else:
-            r = l
+        r = 100 if l is None or l > 100 else l
         self.retrieve = r
         return r > 0
 
     async def _fill(self):
-        if self._get_retrieve():
-            data = await self._retrieve_data(self.retrieve)
-            entries = data.get("audit_log_entries")
-            if len(entries) < 100:
-                self.limit = 0  # terminate the infinite loop
+        if not self._get_retrieve():
+            return
+        data = await self._retrieve_data(self.retrieve)
+        entries = data.get("audit_log_entries")
+        if len(entries) < 100:
+            self.limit = 0  # terminate the infinite loop
 
-            if self._filter:
-                entries = filter(self._filter, entries)
+        if self._filter:
+            entries = filter(self._filter, entries)
 
-            state = self._state
+        state = self._state
 
-            appcmds: Dict[int, APIApplicationCommand] = {}
-            for d in data.get("application_commands", []):
-                try:
-                    cmd = application_command_factory(d)
-                except TypeError:
-                    pass
-                else:
-                    appcmds[int(d["id"])] = cmd
+        appcmds: Dict[int, APIApplicationCommand] = {}
+        for d in data.get("application_commands", []):
+            try:
+                cmd = application_command_factory(d)
+            except TypeError:
+                pass
+            else:
+                appcmds[int(d["id"])] = cmd
 
-            events = {
-                int(d["id"]): GuildScheduledEvent(state=state, data=d)
-                for d in data.get("guild_scheduled_events", [])
-            }
+        events = {
+            int(d["id"]): GuildScheduledEvent(state=state, data=d)
+            for d in data.get("guild_scheduled_events", [])
+        }
 
-            integrations = {
-                int(d["id"]): PartialIntegration(guild=self.guild, data=d)
-                for d in data.get("integrations", [])
-            }
+        integrations = {
+            int(d["id"]): PartialIntegration(guild=self.guild, data=d)
+            for d in data.get("integrations", [])
+        }
 
-            threads = {
-                int(d["id"]): Thread(guild=self.guild, state=state, data=d)
-                for d in data.get("threads", [])
-            }
+        threads = {
+            int(d["id"]): Thread(guild=self.guild, state=state, data=d)
+            for d in data.get("threads", [])
+        }
 
-            users = {int(d["id"]): state.create_user(d) for d in data.get("users", [])}
+        users = {int(d["id"]): state.create_user(d) for d in data.get("users", [])}
 
-            webhooks = {int(d["id"]): state.create_webhook(d) for d in data.get("webhooks", [])}
+        webhooks = {int(d["id"]): state.create_webhook(d) for d in data.get("webhooks", [])}
 
-            for element in entries:
-                # TODO: remove this if statement later
-                if element["action_type"] is None:
-                    continue
+        for element in entries:
+            # TODO: remove this if statement later
+            if element["action_type"] is None:
+                continue
 
-                await self.entries.put(
-                    AuditLogEntry(
-                        data=element,
-                        guild=self.guild,
-                        application_commands=appcmds,
-                        guild_scheduled_events=events,
-                        integrations=integrations,
-                        threads=threads,
-                        users=users,
-                        webhooks=webhooks,
-                    )
+            await self.entries.put(
+                AuditLogEntry(
+                    data=element,
+                    guild=self.guild,
+                    application_commands=appcmds,
+                    guild_scheduled_events=events,
+                    integrations=integrations,
+                    threads=threads,
+                    users=users,
+                    webhooks=webhooks,
                 )
+            )
 
 
 class GuildIterator(_AsyncIterator["Guild"]):
@@ -702,10 +692,7 @@ class GuildIterator(_AsyncIterator["Guild"]):
 
     def _get_retrieve(self):
         l = self.limit
-        if l is None or l > 200:
-            r = 200
-        else:
-            r = l
+        r = 200 if l is None or l > 200 else l
         self.retrieve = r
         return r > 0
 
@@ -715,18 +702,19 @@ class GuildIterator(_AsyncIterator["Guild"]):
         return Guild(state=self.state, data=data)
 
     async def fill_guilds(self):
-        if self._get_retrieve():
-            data = await self._retrieve_guilds(self.retrieve)
-            if len(data) < 200:
-                self.limit = 0
+        if not self._get_retrieve():
+            return
+        data = await self._retrieve_guilds(self.retrieve)
+        if len(data) < 200:
+            self.limit = 0
 
-            if self.reverse:
-                data = reversed(data)
-            if self._filter:
-                data = filter(self._filter, data)
+        if self.reverse:
+            data = reversed(data)
+        if self._filter:
+            data = filter(self._filter, data)
 
-            for element in data:
-                await self.guilds.put(self.create_guild(element))
+        for element in data:
+            await self.guilds.put(self.create_guild(element))
 
     async def _retrieve_guilds(self, retrieve) -> List[Guild]:
         """Retrieve guilds and update next parameters."""
@@ -778,28 +766,26 @@ class MemberIterator(_AsyncIterator["Member"]):
 
     def _get_retrieve(self):
         l = self.limit
-        if l is None or l > 1000:
-            r = 1000
-        else:
-            r = l
+        r = 1000 if l is None or l > 1000 else l
         self.retrieve = r
         return r > 0
 
     async def fill_members(self):
-        if self._get_retrieve():
-            after = self.after.id if self.after else None
-            data = await self.get_members(self.guild.id, self.retrieve, after)
-            if not data:
-                # no data, terminate
-                return
+        if not self._get_retrieve():
+            return
+        after = self.after.id if self.after else None
+        data = await self.get_members(self.guild.id, self.retrieve, after)
+        if not data:
+            # no data, terminate
+            return
 
-            if len(data) < 1000:
-                self.limit = 0  # terminate loop
+        if len(data) < 1000:
+            self.limit = 0  # terminate loop
 
-            self.after = Object(id=int(data[-1]["user"]["id"]))
+        self.after = Object(id=int(data[-1]["user"]["id"]))
 
-            for element in reversed(data):
-                await self.members.put(self.create_member(element))
+        for element in reversed(data):
+            await self.members.put(self.create_member(element))
 
     def create_member(self, data):
         from .member import Member
@@ -831,15 +817,16 @@ class ArchivedThreadIterator(_AsyncIterator["Thread"]):
         if before is None:
             self.before = None
         elif isinstance(before, datetime.datetime):
-            if joined:
-                self.before = str(time_snowflake(before, high=False))
-            else:
-                self.before = before.isoformat()
+            self.before = (
+                str(time_snowflake(before, high=False))
+                if joined
+                else before.isoformat()
+            )
+
+        elif joined:
+            self.before = str(before.id)
         else:
-            if joined:
-                self.before = str(before.id)
-            else:
-                self.before = snowflake_time(before.id).isoformat()
+            self.before = snowflake_time(before.id).isoformat()
 
         self.update_before: Callable[[ThreadPayload], str] = self.get_archive_timestamp
 
@@ -940,10 +927,7 @@ class GuildScheduledEventUserIterator(_AsyncIterator[Union["User", "Member"]]):
 
     def _get_retrieve(self) -> bool:
         l = self.limit
-        if l is None or l > 100:
-            r = 100
-        else:
-            r = l
+        r = 100 if l is None or l > 100 else l
         self.retrieve: int = r
         return r > 0
 

@@ -104,8 +104,9 @@ class PyAttributeTable(SphinxDirective):
                 modulename = self.env.ref_context.get("py:module")
         if modulename is None:
             raise RuntimeError(
-                "modulename somehow None for %s in %s." % (content, self.env.docname)
+                f"modulename somehow None for {content} in {self.env.docname}."
             )
+
 
         return modulename, name
 
@@ -264,11 +265,12 @@ def class_results_to_node(key: str, elements: List[TableElement]) -> attributeta
         ref = nodes.reference(
             "",
             "",
-            internal=True,
-            refuri="#" + element.fullname,
-            anchorname="",
             *[nodes.Text(element.label)],
+            internal=True,
+            refuri=f"#{element.fullname}",
+            anchorname="",
         )
+
         para = addnodes.compact_paragraph("", "", ref)
         if element.badge is not None:
             ul.append(attributetable_item("", element.badge, para))

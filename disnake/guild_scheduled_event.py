@@ -82,9 +82,7 @@ class GuildScheduledEventMetadata:
         return f"<GuildScheduledEventMetadata location={self.location!r}>"
 
     def to_dict(self) -> GuildScheduledEventEntityMetadataPayload:
-        if self.location is not None:
-            return {"location": self.location}
-        return {}
+        return {"location": self.location} if self.location is not None else {}
 
     @classmethod
     def from_dict(

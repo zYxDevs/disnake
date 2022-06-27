@@ -128,7 +128,7 @@ def when_mentioned_or(*prefixes: str) -> Callable[[BotBase, Message], List[str]]
 
 
 def _is_submodule(parent: str, child: str) -> bool:
-    return parent == child or child.startswith(parent + ".")
+    return parent == child or child.startswith(f"{parent}.")
 
 
 class _DefaultRepr:

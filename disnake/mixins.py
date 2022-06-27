@@ -38,9 +38,7 @@ class EqualityComparable:
         return isinstance(other, self.__class__) and other.id == self.id
 
     def __ne__(self, other: object) -> bool:
-        if isinstance(other, self.__class__):
-            return other.id != self.id
-        return True
+        return other.id != self.id if isinstance(other, self.__class__) else True
 
 
 class Hashable(EqualityComparable):

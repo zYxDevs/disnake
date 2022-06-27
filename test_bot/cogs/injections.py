@@ -39,8 +39,8 @@ class HopeToGod:
         self.discriminator = discriminator
 
     @commands.converter_method
-    async def convert(cls, inter: disnake.CommandInteraction, user: disnake.User):
-        return cls(user.name, user.discriminator)
+    async def convert(self, inter: disnake.CommandInteraction, user: disnake.User):
+        return self(user.name, user.discriminator)
 
     def __repr__(self) -> str:
         return f"HopeToGod({self.username!r}, {self.discriminator!r})"

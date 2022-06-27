@@ -78,14 +78,18 @@ class EventItem:
         self.error: Optional[Exception] = error
 
     def __lt__(self: EI, other: EI) -> bool:
-        if not isinstance(other, EventItem):
-            return NotImplemented
-        return self.type < other.type
+        return (
+            self.type < other.type
+            if isinstance(other, EventItem)
+            else NotImplemented
+        )
 
     def __eq__(self: EI, other: EI) -> bool:
-        if not isinstance(other, EventItem):
-            return NotImplemented
-        return self.type == other.type
+        return (
+            self.type == other.type
+            if isinstance(other, EventItem)
+            else NotImplemented
+        )
 
     def __hash__(self) -> int:
         return hash(self.type)
@@ -380,9 +384,11 @@ class AutoShardedClient(Client):
         latency of every shard's latency. To get a list of shard latency, check the
         :attr:`latencies` property. Returns ``nan`` if there are no shards ready.
         """
-        if not self.__shards:
-            return float("nan")
-        return sum(latency for _, latency in self.latencies) / len(self.__shards)
+        return (
+            sum(latency for _, latency in self.latencies) / len(self.__shards)
+            if self.__shards
+            else float("nan")
+        )
 
     @property
     def latencies(self) -> List[Tuple[int, float]]:
@@ -492,10 +498,10 @@ class AutoShardedClient(Client):
             except Exception:
                 pass
 
-        to_close = [
-            asyncio.ensure_future(shard.close(), loop=self.loop) for shard in self.__shards.values()
-        ]
-        if to_close:
+        if to_close := [
+            asyncio.ensure_future(shard.close(), loop=self.loop)
+            for shard in self.__shards.values()
+        ]:
             await asyncio.wait(to_close)
 
         await self.http.close()
