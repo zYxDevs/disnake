@@ -342,9 +342,7 @@ class Role(Hashable):
 
         .. versionadded:: 2.0
         """
-        if self._emoji is None:
-            return None
-        return PartialEmoji(name=self._emoji)
+        return None if self._emoji is None else PartialEmoji(name=self._emoji)
 
     @property
     def created_at(self) -> datetime.datetime:
@@ -354,9 +352,7 @@ class Role(Hashable):
     @property
     def mention(self) -> str:
         """:class:`str`: Returns a string that allows you to mention a role."""
-        if self.is_default():
-            return "@everyone"
-        return f"<@&{self.id}>"
+        return "@everyone" if self.is_default() else f"<@&{self.id}>"
 
     @property
     def members(self) -> List[Member]:
@@ -480,11 +476,7 @@ class Role(Hashable):
             colour = color
 
         if colour is not MISSING:
-            if isinstance(colour, int):
-                payload["color"] = colour
-            else:
-                payload["color"] = colour.value
-
+            payload["color"] = colour if isinstance(colour, int) else colour.value
         if name is not MISSING:
             payload["name"] = name
 

@@ -101,13 +101,11 @@ def issubclass_(obj: Any, tp: Union[TypeT, Tuple[TypeT, ...]]) -> TypeGuard[Type
     if not isinstance(tp, (type, tuple)):
         return False
     elif not isinstance(obj, type):
-        # Assume we have a type hint
-        if get_origin(obj) in (Union, UnionType, Optional):
-            obj = get_args(obj)
-            return any(issubclass(o, tp) for o in obj)
-        else:
+        if get_origin(obj) not in (Union, UnionType, Optional):
             # Other type hint specializations are not supported
             return False
+        obj = get_args(obj)
+        return any(issubclass(o, tp) for o in obj)
     return issubclass(obj, tp)
 
 
@@ -117,11 +115,7 @@ def remove_optionals(annotation: Any) -> Any:
         annotation = cast(Any, annotation)
 
         args = tuple(i for i in annotation.__args__ if i not in (None, type(None)))
-        if len(args) == 1:
-            annotation = args[0]
-        else:
-            annotation = Union[args]  # type: ignore
-
+        annotation = args[0] if len(args) == 1 else Union[args]
     return annotation
 
 
@@ -412,8 +406,7 @@ class ParamInfo:
             self = cls(default)
 
         self.parse_parameter(param)
-        doc = parsed_docstring.get(param.name)
-        if doc:
+        if doc := parsed_docstring.get(param.name):
             self.parse_doc(doc)
         self.parse_annotation(type_hints.get(param.name, param.annotation))
 
@@ -580,11 +573,11 @@ class ParamInfo:
             self.default = parameter.default
             self.convert_default = True
 
-        success = self.parse_annotation(annotation, converter_mode=True)
-        if success:
+        if success := self.parse_annotation(annotation, converter_mode=True):
             return
-        success = self.parse_annotation(fallback_annotation, converter_mode=True)
-        if success:
+        if success := self.parse_annotation(
+            fallback_annotation, converter_mode=True
+        ):
             return
 
         raise TypeError(

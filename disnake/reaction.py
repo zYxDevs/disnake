@@ -105,9 +105,7 @@ class Reaction:
         return isinstance(other, self.__class__) and other.emoji == self.emoji
 
     def __ne__(self, other: Any) -> bool:
-        if isinstance(other, self.__class__):
-            return other.emoji != self.emoji
-        return True
+        return other.emoji != self.emoji if isinstance(other, self.__class__) else True
 
     def __hash__(self) -> int:
         return hash(self.emoji)
@@ -215,10 +213,11 @@ class Reaction:
             in a guild message context. Sometimes it can be a :class:`User`
             if the member has left the guild.
         """
-        if not isinstance(self.emoji, str):
-            emoji = f"{self.emoji.name}:{self.emoji.id}"
-        else:
-            emoji = self.emoji
+        emoji = (
+            self.emoji
+            if isinstance(self.emoji, str)
+            else f"{self.emoji.name}:{self.emoji.id}"
+        )
 
         if limit is None:
             limit = self.count

@@ -241,9 +241,7 @@ def parse_time(timestamp: Optional[str]) -> Optional[datetime.datetime]:
 
 
 def parse_time(timestamp: Optional[str]) -> Optional[datetime.datetime]:
-    if timestamp:
-        return datetime.datetime.fromisoformat(timestamp)
-    return None
+    return datetime.datetime.fromisoformat(timestamp) if timestamp else None
 
 
 def copy_doc(original: Callable) -> Callable[[T], T]:
@@ -351,10 +349,10 @@ def parse_token(token: str) -> Tuple[int, datetime.datetime, bytes]:
 
     user_id = int(b64decode(parts[0]))
 
-    timestamp = int.from_bytes(b64decode(parts[1] + "=="), "big")
+    timestamp = int.from_bytes(b64decode(f"{parts[1]}=="), "big")
     created_at = datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc)
 
-    hmac = b64decode(parts[2] + "==")
+    hmac = b64decode(f"{parts[2]}==")
 
     return user_id, created_at, hmac
 
@@ -421,10 +419,7 @@ def find(predicate: Callable[[T], Any], seq: Iterable[T]) -> Optional[T]:
         The iterable to search through.
     """
 
-    for element in seq:
-        if predicate(element):
-            return element
-    return None
+    return next((element for element in seq if predicate(element)), None)
 
 
 def get(iterable: Iterable[T], **attrs: Any) -> Optional[T]:
@@ -480,21 +475,21 @@ def get(iterable: Iterable[T], **attrs: Any) -> Optional[T]:
     if len(attrs) == 1:
         k, v = attrs.popitem()
         pred = attrget(k.replace("__", "."))
-        for elem in iterable:
-            if pred(elem) == v:
-                return elem
-        return None
-
+        return next((elem for elem in iterable if pred(elem) == v), None)
     converted = [(attrget(attr.replace("__", ".")), value) for attr, value in attrs.items()]
 
-    for elem in iterable:
-        if _all(pred(elem) == value for pred, value in converted):
-            return elem
-    return None
+    return next(
+        (
+            elem
+            for elem in iterable
+            if _all(pred(elem) == value for pred, value in converted)
+        ),
+        None,
+    )
 
 
 def _unique(iterable: Iterable[T]) -> List[T]:
-    return [x for x in dict.fromkeys(iterable)]
+    return list(dict.fromkeys(iterable))
 
 
 def _get_as_snowflake(data: Any, key: str) -> Optional[int]:
@@ -507,19 +502,17 @@ def _get_as_snowflake(data: Any, key: str) -> Optional[int]:
 
 
 def _maybe_cast(value: V, converter: Callable[[V], T], default: T = None) -> Optional[T]:
-    if value is MISSING:
-        return default
-    return converter(value)
+    return default if value is MISSING else converter(value)
 
 
 def _get_mime_type_for_image(data: bytes):
-    if data[0:8] == b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A":
+    if data[:8] == b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A":
         return "image/png"
-    elif data[0:3] == b"\xff\xd8\xff" or data[6:10] in (b"JFIF", b"Exif"):
+    elif data[:3] == b"\xff\xd8\xff" or data[6:10] in (b"JFIF", b"Exif"):
         return "image/jpeg"
-    elif data[0:6] in (b"\x47\x49\x46\x38\x37\x61", b"\x47\x49\x46\x38\x39\x61"):
+    elif data[:6] in (b"\x47\x49\x46\x38\x37\x61", b"\x47\x49\x46\x38\x39\x61"):
         return "image/gif"
-    elif data[0:4] == b"RIFF" and data[8:12] == b"WEBP":
+    elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return "image/webp"
     else:
         raise ValueError("Unsupported image type given")
@@ -567,23 +560,19 @@ else:
 
 def _parse_ratelimit_header(request: Any, *, use_clock: bool = False) -> float:
     reset_after: Optional[str] = request.headers.get("X-Ratelimit-Reset-After")
-    if use_clock or not reset_after:
-        utc = datetime.timezone.utc
-        now = datetime.datetime.now(utc)
-        reset = datetime.datetime.fromtimestamp(float(request.headers["X-Ratelimit-Reset"]), utc)
-        return (reset - now).total_seconds()
-    else:
+    if not use_clock and reset_after:
         return float(reset_after)
+    utc = datetime.timezone.utc
+    now = datetime.datetime.now(utc)
+    reset = datetime.datetime.fromtimestamp(float(request.headers["X-Ratelimit-Reset"]), utc)
+    return (reset - now).total_seconds()
 
 
 async def maybe_coroutine(
     f: Callable[P, Union[Awaitable[T], T]], /, *args: P.args, **kwargs: P.kwargs
 ) -> T:
     value = f(*args, **kwargs)
-    if _isawaitable(value):
-        return await value
-    else:
-        return value  # type: ignore  # typeguard doesn't narrow in the negative case
+    return await value if _isawaitable(value) else value
 
 
 async def async_all(gen: Iterable[Union[Awaitable[bool], bool]], *, check=_isawaitable) -> bool:
@@ -703,8 +692,7 @@ _IS_ASCII = re.compile(r"^[\x00-\x7f]+$")
 
 def _string_width(string: str, *, _IS_ASCII=_IS_ASCII) -> int:
     """Returns string's width."""
-    match = _IS_ASCII.match(string)
-    if match:
+    if match := _IS_ASCII.match(string):
         return match.endpos
 
     UNICODE_WIDE_CHAR_TYPE = "WFA"
@@ -753,8 +741,7 @@ def resolve_invite(
         code = invite.code
     else:
         rx = r"(?:https?\:\/\/)?discord(?:\.gg|(?:app)?\.com\/invite)\/([^?]+)(?:\?(.+))?"
-        m = re.match(rx, invite)
-        if m:
+        if m := re.match(rx, invite):
             code, p = m.groups()
             if with_params:
                 params = {k: v[0] for k, v in parse_qs(p or "").items()}
@@ -783,11 +770,9 @@ def resolve_template(code: Union[Template, str]) -> str:
 
     if isinstance(code, Template):
         return code.code
-    else:
-        rx = r"(?:https?\:\/\/)?discord(?:\.new|(?:app)?\.com\/template)\/(.+)"
-        m = re.match(rx, code)
-        if m:
-            return m.group(1)
+    rx = r"(?:https?\:\/\/)?discord(?:\.new|(?:app)?\.com\/template)\/(.+)"
+    if m := re.match(rx, code):
+        return m[1]
     return code
 
 
@@ -870,8 +855,7 @@ def escape_markdown(text: str, *, as_needed: bool = False, ignore_links: bool = 
 
         def replacement(match):
             groupdict = match.groupdict()
-            is_url = groupdict.get("url")
-            if is_url:
+            if is_url := groupdict.get("url"):
                 return is_url
             return "\\" + groupdict["markdown"]
 
@@ -940,10 +924,16 @@ def _count_left_spaces(string: str) -> int:
 
 def _get_header_line(lines: List[str], header: str, underline: str) -> int:
     underlining = len(header) * underline
-    for i, line in enumerate(lines):
-        if line.rstrip() == header and i + 1 < len(lines) and lines[i + 1].startswith(underlining):
-            return i
-    return len(lines)
+    return next(
+        (
+            i
+            for i, line in enumerate(lines)
+            if line.rstrip() == header
+            and i + 1 < len(lines)
+            and lines[i + 1].startswith(underlining)
+        ),
+        len(lines),
+    )
 
 
 def _get_next_header_line(lines: List[str], underline: str, start: int = 0) -> int:
@@ -967,10 +957,9 @@ def _get_description(lines: List[str]) -> str:
 
 
 def _extract_localization_key(desc: str) -> Tuple[str, Tuple[Optional[str], Optional[str]]]:
-    match = re.search(r"\{\{(.*?)\}\}", desc)
-    if match:
-        desc = desc.replace(match.group(0), "").strip()
-        loc_key = match.group(1).strip()
+    if match := re.search(r"\{\{(.*?)\}\}", desc):
+        desc = desc.replace(match[0], "").strip()
+        loc_key = match[1].strip()
         return desc, (f"{loc_key}_NAME", f"{loc_key}_DESCRIPTION")
     return desc, (None, None)
 

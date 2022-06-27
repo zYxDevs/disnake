@@ -393,9 +393,8 @@ class Asset(AssetMixin):
             if self._animated:
                 if format not in VALID_ASSET_FORMATS:
                     raise ValueError(f"format must be one of {VALID_ASSET_FORMATS}")
-            else:
-                if format not in VALID_STATIC_FORMATS:
-                    raise ValueError(f"format must be one of {VALID_STATIC_FORMATS}")
+            elif format not in VALID_STATIC_FORMATS:
+                raise ValueError(f"format must be one of {VALID_STATIC_FORMATS}")
             url = url.with_path(f"{path}.{format}")
 
         if static_format is not MISSING and not self._animated:
@@ -403,13 +402,13 @@ class Asset(AssetMixin):
                 raise ValueError(f"static_format must be one of {VALID_STATIC_FORMATS}")
             url = url.with_path(f"{path}.{static_format}")
 
-        if size is not MISSING:
-            if not utils.valid_icon_size(size):
-                raise ValueError("size must be a power of 2 between 16 and 4096")
-            url = url.with_query(size=size)
-        else:
+        if size is MISSING:
             url = url.with_query(url.raw_query_string)
 
+        elif not utils.valid_icon_size(size):
+            raise ValueError("size must be a power of 2 between 16 and 4096")
+        else:
+            url = url.with_query(size=size)
         url = str(url)
         return Asset(state=self._state, url=url, key=self._key, animated=self._animated)
 
@@ -464,9 +463,8 @@ class Asset(AssetMixin):
         if self._animated:
             if format not in VALID_ASSET_FORMATS:
                 raise ValueError(f"format must be one of {VALID_ASSET_FORMATS}")
-        else:
-            if format not in VALID_STATIC_FORMATS:
-                raise ValueError(f"format must be one of {VALID_STATIC_FORMATS}")
+        elif format not in VALID_STATIC_FORMATS:
+            raise ValueError(f"format must be one of {VALID_STATIC_FORMATS}")
 
         url = yarl.URL(self._url)
         path, _ = os.path.splitext(url.path)
@@ -497,6 +495,4 @@ class Asset(AssetMixin):
         :class:`Asset`
             The newly updated asset.
         """
-        if self._animated:
-            return self
-        return self.with_format(format)
+        return self if self._animated else self.with_format(format)

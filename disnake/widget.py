@@ -351,9 +351,7 @@ class Widget:
         return self.json_url
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, Widget):
-            return self.id == other.id
-        return False
+        return self.id == other.id if isinstance(other, Widget) else False
 
     def __repr__(self) -> str:
         return f"<Widget id={self.id} name={self.name!r} invite_url={self.invite_url!r}>"

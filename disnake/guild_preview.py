@@ -93,16 +93,14 @@ class GuildPreview:
         self._splash: Optional[str] = data.get("splash")
         self._discovery_splash: Optional[str] = data.get("discovery_splash")
 
-        emojis = data.get("emojis")
-        if emojis:
+        if emojis := data.get("emojis"):
             self.emojis: Tuple[Emoji, ...] = tuple(
                 Emoji(guild=self, state=self._state, data=emoji) for emoji in emojis
             )
         else:
             self.emojis: Tuple[Emoji, ...] = ()
 
-        stickers = data.get("stickers")
-        if stickers:
+        if stickers := data.get("stickers"):
             self.stickers: Tuple[GuildSticker, ...] = tuple(
                 GuildSticker(state=self._state, data=sticker) for sticker in stickers
             )

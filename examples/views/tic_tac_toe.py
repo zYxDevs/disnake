@@ -29,18 +29,17 @@ class TicTacToeButton(disnake.ui.Button["TicTacToe"]):
         if view.current_player == view.X:
             self.style = disnake.ButtonStyle.danger
             self.label = "X"
-            self.disabled = True
             view.board[self.y][self.x] = view.X
             view.current_player = view.O
             content = "It is now O's turn"
         else:
             self.style = disnake.ButtonStyle.success
             self.label = "O"
-            self.disabled = True
             view.board[self.y][self.x] = view.O
             view.current_player = view.X
             content = "It is now X's turn"
 
+        self.disabled = True
         winner = view.check_board_winner()
         if winner is not None:
             if winner == view.X:

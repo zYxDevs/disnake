@@ -361,24 +361,20 @@ class GuildChannel(ABC):
         except KeyError:
             if parent_id is not _undefined:
                 if lock_permissions:
-                    category = self.guild.get_channel(parent_id)
-                    if category:
+                    if category := self.guild.get_channel(parent_id):
                         options["permission_overwrites"] = [
                             c._asdict() for c in category._overwrites
                         ]
                 options["parent_id"] = parent_id
             elif lock_permissions and self.category_id is not None:
-                # if we're syncing permissions on a pre-existing channel category without changing it
-                # we need to update the permissions to point to the pre-existing category
-                category = self.guild.get_channel(self.category_id)
-                if category:
+                if category := self.guild.get_channel(self.category_id):
                     options["permission_overwrites"] = [c._asdict() for c in category._overwrites]
         else:
             await self._move(
                 position, parent_id=parent_id, lock_permissions=lock_permissions, reason=reason
             )
 
-        overwrites = options.get("overwrites", None)
+        overwrites = options.get("overwrites")
         if overwrites is not None:
             perms = []
             for target, perm in overwrites.items():
@@ -392,12 +388,11 @@ class GuildChannel(ABC):
                     "allow": allow.value,
                     "deny": deny.value,
                     "id": target.id,
+                    "type": _Overwrites.ROLE
+                    if isinstance(target, Role)
+                    else _Overwrites.MEMBER,
                 }
 
-                if isinstance(target, Role):
-                    payload["type"] = _Overwrites.ROLE
-                else:
-                    payload["type"] = _Overwrites.MEMBER
 
                 perms.append(payload)
             options["permission_overwrites"] = perms
@@ -434,9 +429,7 @@ class GuildChannel(ABC):
                 # swap it to be the first one.
                 everyone_index = index
 
-        # do the swap
-        tmp = self._overwrites
-        if tmp:
+        if tmp := self._overwrites:
             tmp[everyone_index], tmp[0] = tmp[0], tmp[everyone_index]
 
     @property
@@ -874,9 +867,8 @@ class GuildChannel(ABC):
                 overwrite = PermissionOverwrite(**permissions)
             except (ValueError, TypeError):
                 raise TypeError("Invalid permissions given to keyword arguments.")
-        else:
-            if len(permissions) > 0:
-                raise TypeError("Cannot mix overwrite and keyword arguments.")
+        elif len(permissions) > 0:
+            raise TypeError("Cannot mix overwrite and keyword arguments.")
 
         # TODO: wait for event
 
@@ -1505,7 +1497,7 @@ class Messageable:
 
         if mention_author is not None:
             allowed_mentions_payload = allowed_mentions_payload or AllowedMentions().to_dict()
-            allowed_mentions_payload["replied_user"] = bool(mention_author)
+            allowed_mentions_payload["replied_user"] = mention_author
 
         reference_payload = None
         if reference is not None:
@@ -1531,11 +1523,7 @@ class Messageable:
         else:
             components_payload = None
 
-        if suppress_embeds:
-            flags = MessageFlags.suppress_embeds.flag
-        else:
-            flags = 0
-
+        flags = MessageFlags.suppress_embeds.flag if suppress_embeds else 0
         if files is not None:
             if len(files) > 10:
                 raise ValueError("files parameter must be a list of up to 10 elements")

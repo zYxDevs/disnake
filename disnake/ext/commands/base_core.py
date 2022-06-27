@@ -224,7 +224,7 @@ class InvokableApplicationCommand(ABC):
     def _update_copy(self: AppCommandT, kwargs: Dict[str, Any]) -> AppCommandT:
         if kwargs:
             kw = kwargs.copy()
-            kw.update(self.__original_kwargs__)
+            kw |= self.__original_kwargs__
             copy = type(self)(self.callback, **kw)
             return self._ensure_assignment_on_copy(copy)
         else:
@@ -308,8 +308,7 @@ class InvokableApplicationCommand(ABC):
             current = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
             bucket = self._buckets.get_bucket(inter, current)  # type: ignore
             if bucket is not None:
-                retry_after = bucket.update_rate_limit(current)
-                if retry_after:
+                if retry_after := bucket.update_rate_limit(current):
                     raise CommandOnCooldown(bucket, retry_after, self._buckets.type)  # type: ignore
 
     async def prepare(self, inter: ApplicationCommandInteraction) -> None:
@@ -464,11 +463,7 @@ class InvokableApplicationCommand(ABC):
         # first, call the command local hook:
         cog = self.cog
         if self._before_invoke is not None:
-            # should be cog if @commands.before_invoke is used
-            instance = getattr(self._before_invoke, "__self__", cog)
-            # __self__ only exists for methods, not functions
-            # however, if @command.before_invoke is used, it will be a function
-            if instance:
+            if instance := getattr(self._before_invoke, "__self__", cog):
                 await self._before_invoke(instance, inter)  # type: ignore
             else:
                 await self._before_invoke(inter)  # type: ignore
@@ -497,8 +492,7 @@ class InvokableApplicationCommand(ABC):
     async def call_after_hooks(self, inter: ApplicationCommandInteraction) -> None:
         cog = self.cog
         if self._after_invoke is not None:
-            instance = getattr(self._after_invoke, "__self__", cog)
-            if instance:
+            if instance := getattr(self._after_invoke, "__self__", cog):
                 await self._after_invoke(instance, inter)  # type: ignore
             else:
                 await self._after_invoke(inter)  # type: ignore

@@ -216,13 +216,13 @@ class Modal:
         pass
 
     def to_components(self) -> ModalPayload:
-        payload: ModalPayload = {
+        return {
             "title": self.title,
             "custom_id": self.custom_id,
-            "components": [component.to_component_dict() for component in self.components],
+            "components": [
+                component.to_component_dict() for component in self.components
+            ],
         }
-
-        return payload
 
     async def _scheduled_task(self, interaction: ModalInteraction) -> None:
         try:

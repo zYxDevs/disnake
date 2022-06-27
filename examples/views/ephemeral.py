@@ -21,7 +21,7 @@ class Counter(disnake.ui.View):
     @disnake.ui.button(label="0", style=disnake.ButtonStyle.red)
     async def count(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction):
         number = int(button.label) if button.label else 0
-        if number + 1 >= 5:
+        if number >= 4:
             button.style = disnake.ButtonStyle.green
             button.disabled = True
         button.label = str(number + 1)

@@ -503,7 +503,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
     def _update_copy(self: CommandT, kwargs: Dict[str, Any]) -> CommandT:
         if kwargs:
             kw = kwargs.copy()
-            kw.update(self.__original_kwargs__)
+            kw |= self.__original_kwargs__
             copy = self.__class__(self.callback, **kw)
             return self._ensure_assignment_on_copy(copy)
         else:
@@ -576,11 +576,10 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
             try:
                 argument = view.get_quoted_word()
             except ArgumentParsingError as exc:
-                if self._is_typing_optional(param.annotation):
-                    view.index = previous
-                    return None
-                else:
+                if not self._is_typing_optional(param.annotation):
                     raise exc
+                view.index = previous
+                return None
         view.previous = previous
 
         # type-checker fails to narrow argument
@@ -688,9 +687,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
 
         For example in commands ``?a b c test``, the root parent is ``a``.
         """
-        if not self.parent:
-            return None
-        return self.parents[-1]
+        return self.parents[-1] if self.parent else None
 
     @property
     def qualified_name(self) -> str:
@@ -701,9 +698,8 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
         ``one two three``.
         """
 
-        parent = self.full_parent_name
-        if parent:
-            return parent + " " + self.name
+        if parent := self.full_parent_name:
+            return f"{parent} {self.name}"
         else:
             return self.name
 
@@ -762,18 +758,14 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
                         break
 
         if not self.ignore_extra and not view.eof:
-            raise TooManyArguments("Too many arguments passed to " + self.qualified_name)
+            raise TooManyArguments(f"Too many arguments passed to {self.qualified_name}")
 
     async def call_before_hooks(self, ctx: Context) -> None:
         # now that we're done preparing we can call the pre-command hooks
         # first, call the command local hook:
         cog = self.cog
         if self._before_invoke is not None:
-            # should be cog if @commands.before_invoke is used
-            instance = getattr(self._before_invoke, "__self__", cog)
-            # __self__ only exists for methods, not functions
-            # however, if @command.before_invoke is used, it will be a function
-            if instance:
+            if instance := getattr(self._before_invoke, "__self__", cog):
                 await self._before_invoke(instance, ctx)  # type: ignore
             else:
                 await self._before_invoke(ctx)  # type: ignore
@@ -792,8 +784,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
     async def call_after_hooks(self, ctx: Context) -> None:
         cog = self.cog
         if self._after_invoke is not None:
-            instance = getattr(self._after_invoke, "__self__", cog)
-            if instance:
+            if instance := getattr(self._after_invoke, "__self__", cog):
                 await self._after_invoke(instance, ctx)  # type: ignore
             else:
                 await self._after_invoke(ctx)  # type: ignore
@@ -814,8 +805,7 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
             current = dt.replace(tzinfo=datetime.timezone.utc).timestamp()
             bucket = self._buckets.get_bucket(ctx.message, current)
             if bucket is not None:
-                retry_after = bucket.update_rate_limit(current)
-                if retry_after:
+                if retry_after := bucket.update_rate_limit(current):
                     raise CommandOnCooldown(bucket, retry_after, self._buckets.type)  # type: ignore
 
     async def prepare(self, ctx: Context) -> None:
@@ -1074,10 +1064,11 @@ class Command(_BaseCommand, Generic[CogT, P, T]):
                 )
                 if should_print:
                     result.append(
-                        f"[{name}={param.default}]"
-                        if not greedy
-                        else f"[{name}={param.default}]..."
+                        f"[{name}={param.default}]..."
+                        if greedy
+                        else f"[{name}={param.default}]"
                     )
+
                     continue
                 else:
                     result.append(f"[{name}]")

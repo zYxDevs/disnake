@@ -307,10 +307,7 @@ class UserConverter(IDConverter[disnake.User]):
             user_id = int(match.group(1))
 
             mentions: Iterable[Union[disnake.User, disnake.Member]]
-            if isinstance(ctx, Context):
-                mentions = ctx.message.mentions
-            else:
-                mentions = []
+            mentions = ctx.message.mentions if isinstance(ctx, Context) else []
             result = bot.get_user(user_id) or _utils_get(mentions, id=user_id)
 
             if result is None:
@@ -422,8 +419,7 @@ class MessageConverter(IDConverter[disnake.Message]):
     async def convert(self, ctx: AnyContext, argument: str) -> disnake.Message:
         guild_id, message_id, channel_id = PartialMessageConverter._get_id_matches(ctx, argument)
         bot: disnake.Client = ctx.bot
-        message = bot._connection._get_message(message_id)
-        if message:
+        if message := bot._connection._get_message(message_id):
             return message
         channel = PartialMessageConverter._resolve_channel(ctx, guild_id, channel_id)
         if not channel:
@@ -698,7 +694,7 @@ class ColourConverter(Converter[disnake.Colour]):
         if argument[0] == "#":
             return self.parse_hex_number(argument[1:])
 
-        if argument[0:2] == "0x":
+        if argument.startswith("0x"):
             rest = argument[2:]
             # Legacy backwards compatible syntax
             if rest.startswith("#"):
@@ -706,7 +702,7 @@ class ColourConverter(Converter[disnake.Colour]):
             return self.parse_hex_number(rest)
 
         arg = argument.lower()
-        if arg[0:3] == "rgb":
+        if arg.startswith("rgb"):
             return self.parse_rgb(arg)
 
         arg = arg.replace(" ", "_")
@@ -740,8 +736,9 @@ class RoleConverter(IDConverter[disnake.Role]):
         if not guild:
             raise NoPrivateMessage()
 
-        match = self._get_id_match(argument) or re.match(r"<@&([0-9]{15,20})>$", argument)
-        if match:
+        if match := self._get_id_match(argument) or re.match(
+            r"<@&([0-9]{15,20})>$", argument
+        ):
             result = guild.get_role(int(match.group(1)))
         else:
             result = _utils_get(guild._roles.values(), name=argument)
@@ -797,8 +794,8 @@ class GuildConverter(IDConverter[disnake.Guild]):
         if result is None:
             result = _utils_get(bot.guilds, name=argument)
 
-            if result is None:
-                raise GuildNotFound(argument)
+        if result is None:
+            raise GuildNotFound(argument)
         return result
 
 
@@ -853,12 +850,12 @@ class PartialEmojiConverter(Converter[disnake.PartialEmoji]):
     """
 
     async def convert(self, ctx: AnyContext, argument: str) -> disnake.PartialEmoji:
-        match = re.match(r"<(a?):([a-zA-Z0-9\_]{1,32}):([0-9]{15,20})>$", argument)
-
-        if match:
-            emoji_animated = bool(match.group(1))
-            emoji_name: str = match.group(2)
-            emoji_id = int(match.group(3))
+        if match := re.match(
+            r"<(a?):([a-zA-Z0-9\_]{1,32}):([0-9]{15,20})>$", argument
+        ):
+            emoji_animated = bool(match[1])
+            emoji_name: str = match[2]
+            emoji_id = int(match[3])
 
             return disnake.PartialEmoji.with_state(
                 ctx.bot._connection, animated=emoji_animated, name=emoji_name, id=emoji_id
@@ -943,10 +940,7 @@ class PermissionsConverter(Converter[disnake.Permissions]):
         if attr is None:
             raise BadArgument(f"Invalid Permissions: {name!r}")
 
-        if callable(attr):
-            return attr()
-        else:
-            return disnake.Permissions(**{name: True})
+        return attr() if callable(attr) else disnake.Permissions(**{name: True})
 
 
 class GuildScheduledEventConverter(IDConverter[disnake.GuildScheduledEvent]):
@@ -976,9 +970,8 @@ class GuildScheduledEventConverter(IDConverter[disnake.GuildScheduledEvent]):
 
         # 2.
         if not result and (match := event_regex.match(argument)):
-            event_guild = bot.get_guild(int(match.group(1)))
-            if event_guild:
-                result = event_guild.get_scheduled_event(int(match.group(2)))
+            if event_guild := bot.get_guild(int(match[1])):
+                result = event_guild.get_scheduled_event(int(match[2]))
 
         # 3.
         if not result and guild:
@@ -1123,9 +1116,9 @@ class Greedy(List[T]):
 
 def _convert_to_bool(argument: str) -> bool:
     lowered = argument.lower()
-    if lowered in ("yes", "y", "true", "t", "1", "enable", "on"):
+    if lowered in {"yes", "y", "true", "t", "1", "enable", "on"}:
         return True
-    elif lowered in ("no", "n", "false", "f", "0", "disable", "off"):
+    elif lowered in {"no", "n", "false", "f", "0", "disable", "off"}:
         return False
     else:
         raise BadBoolArgument(lowered)

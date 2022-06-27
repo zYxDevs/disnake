@@ -649,8 +649,9 @@ class TextChannel(disnake.abc.Messageable, disnake.abc.GuildChannel, Hashable):
         avatar_data = await utils._assetbytes_to_base64_data(avatar)
 
         data = await self._state.http.create_webhook(
-            self.id, name=str(name), avatar=avatar_data, reason=reason
+            self.id, name=name, avatar=avatar_data, reason=reason
         )
+
         return Webhook.from_state(data, state=self._state)
 
     async def follow(self, *, destination: TextChannel, reason: Optional[str] = None) -> Webhook:
@@ -1543,8 +1544,9 @@ class VoiceChannel(disnake.abc.Messageable, VocalGuildChannel):
         avatar_data = await utils._assetbytes_to_base64_data(avatar)
 
         data = await self._state.http.create_webhook(
-            self.id, name=str(name), avatar=avatar_data, reason=reason
+            self.id, name=name, avatar=avatar_data, reason=reason
         )
+
         return Webhook.from_state(data, state=self._state)
 
 
@@ -2730,16 +2732,13 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
                 "ThreadArchiveDurationLiteral", try_enum_to_int(auto_archive_duration)
             )
 
-        if params.files and len(params.files) > 10:
-            raise ValueError("files parameter must be a list of up to 10 elements")
-        elif params.files and not all(isinstance(file, File) for file in params.files):
-            raise TypeError("files parameter must be a list of File")
+        if params.files:
+            if len(params.files) > 10:
+                raise ValueError("files parameter must be a list of up to 10 elements")
+            elif not all(isinstance(file, File) for file in params.files):
+                raise TypeError("files parameter must be a list of File")
 
-        if suppress_embeds:
-            flags = MessageFlags.suppress_embeds.flag
-        else:
-            flags = 0
-
+        flags = MessageFlags.suppress_embeds.flag if suppress_embeds else 0
         try:
             data = await self._state.http.start_thread_in_forum_channel(
                 self.id,
@@ -2868,8 +2867,9 @@ class ForumChannel(disnake.abc.GuildChannel, Hashable):
         avatar_data = await utils._assetbytes_to_base64_data(avatar)
 
         data = await self._state.http.create_webhook(
-            self.id, name=str(name), avatar=avatar_data, reason=reason
+            self.id, name=name, avatar=avatar_data, reason=reason
         )
+
         return Webhook.from_state(data, state=self._state)
 
 

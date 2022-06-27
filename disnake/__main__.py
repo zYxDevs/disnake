@@ -35,13 +35,16 @@ import disnake
 
 
 def show_version():
-    entries = []
-
-    entries.append(
-        "- Python v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(sys.version_info)
-    )
     version_info = disnake.version_info
-    entries.append("- disnake v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(version_info))
+    entries = [
+        "- Python v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(
+            sys.version_info
+        ),
+        "- disnake v{0.major}.{0.minor}.{0.micro}-{0.releaselevel}".format(
+            version_info
+        ),
+    ]
+
     if pkg := pkg_resources.get_distribution("disnake"):
         entries.append(f"    - disnake pkg_resources: v{pkg.version}")
 
@@ -234,7 +237,7 @@ def newbot(parser, args):
 
     try:
         with open(str(new_directory / "bot.py"), "w", encoding="utf-8") as fp:
-            base = "Bot" if not args.sharded else "AutoShardedBot"
+            base = "AutoShardedBot" if args.sharded else "Bot"
             fp.write(_bot_template.format(base=base, prefix=args.prefix))
     except OSError as exc:
         parser.error(f"could not create bot file ({exc})")

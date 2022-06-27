@@ -124,7 +124,7 @@ class Loop(Generic[LF]):
             raise TypeError(f"Expected coroutine function, not {type(self.coro).__name__!r}.")
 
     async def _call_loop_function(self, name: str, *args: Any, **kwargs: Any) -> None:
-        coro = getattr(self, "_" + name)
+        coro = getattr(self, f"_{name}")
         if coro is None:
             return
 
@@ -591,12 +591,9 @@ class Loop(Generic[LF]):
 
         # pre-condition: self._time is set
         time_now = (now if now is not MISSING else utcnow().replace(microsecond=0)).timetz()
-        for idx, time in enumerate(self._time):
-            if time >= time_now:
-                self._time_index = idx
-                break
-        else:
-            self._time_index = 0
+        self._time_index = next(
+            (idx for idx, time in enumerate(self._time) if time >= time_now), 0
+        )
 
     def _get_time_parameter(
         self,

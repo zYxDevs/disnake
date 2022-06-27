@@ -106,7 +106,7 @@ class TestActionRow:
     def test_clear_items(self):
         r = ActionRow(button1, button2)
         r.clear_items()
-        assert list(r.children) == []
+        assert not list(r.children)
 
     def test_remove_item(self):
         r = ActionRow(button1, button2)
@@ -127,9 +127,9 @@ class TestActionRow:
 
     def test_with_components(self):
         row_modal = ActionRow.with_modal_components()
-        assert list(row_modal.children) == []
+        assert not list(row_modal.children)
         row_msg = ActionRow.with_message_components()
-        assert list(row_msg.children) == []
+        assert not list(row_msg.children)
 
         if TYPE_CHECKING:
             assert_type(row_modal, ActionRow[ModalUIComponent])
